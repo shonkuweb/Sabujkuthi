@@ -73,7 +73,18 @@ try {
     CREATE UNIQUE INDEX IF NOT EXISTS "Order_checkoutTokenHash_key" ON "Order"("checkoutTokenHash");
     CREATE UNIQUE INDEX IF NOT EXISTS "Order_razorpayOrderId_key" ON "Order"("razorpayOrderId");
     CREATE UNIQUE INDEX IF NOT EXISTS "Order_razorpayPaymentId_key" ON "Order"("razorpayPaymentId");
-    CREATE INDEX IF NOT EXISTS "Order_status_createdAt_idx" ON "Order"("status", "createdAt");`);
+    CREATE INDEX IF NOT EXISTS "Order_status_createdAt_idx" ON "Order"("status", "createdAt");
+    CREATE INDEX IF NOT EXISTS "Order_phone_idx" ON "Order"("phone");
+    CREATE TABLE IF NOT EXISTS "Customer" (
+      "id" TEXT NOT NULL PRIMARY KEY,
+      "phone" TEXT NOT NULL,
+      "passwordHash" TEXT NOT NULL,
+      "name" TEXT,
+      "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE UNIQUE INDEX IF NOT EXISTS "Customer_phone_key" ON "Customer"("phone");
+    CREATE INDEX IF NOT EXISTS "Customer_phone_idx" ON "Customer"("phone");`);
     const orderColumns = db.prepare('PRAGMA table_info("Order")').all();
     if (!orderColumns.some(column => column.name === 'orderNumber')) db.exec('ALTER TABLE "Order" ADD COLUMN "orderNumber" INTEGER');
     let lastNumber = Math.max(1000, db.prepare('SELECT MAX(orderNumber) AS number FROM "Order"').get().number || 0,

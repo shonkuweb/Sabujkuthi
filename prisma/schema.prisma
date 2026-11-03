@@ -87,4 +87,17 @@ model Order {
   updatedAt           DateTime @updatedAt
 
   @@index([status, createdAt])
+  @@index([phone])
 }
+
+model Customer {
+  id           String   @id @default(uuid())
+  phone        String   @unique
+  passwordHash String
+  name         String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([phone])
+}
+
