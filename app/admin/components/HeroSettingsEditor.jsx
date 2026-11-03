@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import imageCompression from "browser-image-compression";
 import { FiArrowDown, FiArrowUp, FiPlus, FiTrash2, FiUpload, FiCheck } from "react-icons/fi";
 import styles from "./CategoriesPanel.module.css";
 import heroStyles from "./HeroSettingsEditor.module.css";
@@ -58,15 +59,40 @@ export default function HeroSettingsEditor({ onSavingChange }) {
 
     setUploading(true);
     try {
-      const formData = new FormData();
-      formData.append("file", file);
+      // Compress the image before uploading to optimize quality and avoid proxy/Nginx size limits
+      let compressedFile = file;
+      try {
+        compressedFile = await imageCompression(file, {
+          maxSizeMB: 0.8,
+          maxWidthOrHeight: 1920,
+          useWebWorker: true,
+        });
+      } catch (compErr) {
+        console.warn("Client compression skipped, using original:", compErr);
+      }
+
+      const dataUrl = await imageCompression.getDataUrlFromFile(compressedFile);
 
       const res = await fetch("/api/upload", {
         method: "POST",
-        body: formData,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          dataUrl,
+          filename: file.name || "hero_banner.jpg",
+        }),
       });
 
-      const data = await res.json();
+      const rawText = await res.text();
+      let data;
+      try {
+        data = JSON.parse(rawText);
+      } catch {
+        if (res.status === 413) {
+          throw new Error("The image is too large for the web server (413 Payload Too Large). Please choose a smaller image.");
+        }
+        throw new Error(`Upload failed (status ${res.status}). Server returned an unexpected response.`);
+      }
+
       if (!res.ok || !data.url) {
         throw new Error(data.error || "Failed to upload image to Cloudflare R2.");
       }

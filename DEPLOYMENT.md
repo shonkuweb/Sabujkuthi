@@ -107,6 +107,9 @@ Add a server block to `/etc/nginx/sites-available/sabujkuthi`:
 server {
     server_name sabujkuthi.com www.sabujkuthi.com;
 
+    # Allow image uploads up to 25MB
+    client_max_body_size 25M;
+
     location / {
         proxy_pass http://127.0.0.1:3005;
         proxy_http_version 1.1;
