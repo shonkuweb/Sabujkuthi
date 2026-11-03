@@ -416,7 +416,7 @@ body {
   position: absolute;
   top: 8px;
   left: 8px;
-  background: #f1512f;
+  background: #E91E8C;
   border-radius: 999px;
   font-size: 13px;
   font-weight: 800;
@@ -657,14 +657,14 @@ body {
   top: 14px;
   left: 14px;
   z-index: 2;
-  background: #f1512f;
+  background: #E91E8C;
   color: #fff;
   font-size: 13px;
   font-weight: 800;
   letter-spacing: 0.02em;
   padding: 6px 12px;
   border-radius: 999px;
-  box-shadow: 0 6px 14px rgba(241, 81, 47, 0.35);
+  box-shadow: 0 6px 14px rgba(233, 30, 140, 0.35);
 }
 
 .hero-leaf {

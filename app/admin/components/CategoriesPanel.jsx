@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import imageCompression from "browser-image-compression";
-import { FiCheck, FiEdit2, FiGrid, FiImage, FiPlus, FiUpload, FiX } from "react-icons/fi";
+import { FiCheck, FiEdit2, FiGrid, FiImage, FiPlus, FiTrash2, FiUpload, FiX } from "react-icons/fi";
 import styles from "./CategoriesPanel.module.css";
 
 const emptyForm = { name: "", image: "", isVisible: true };
@@ -108,6 +108,29 @@ export default function CategoriesPanel() {
     }
   };
 
+  const removeCategory = async (category) => {
+    if (!window.confirm(`Are you sure you want to delete category "${category.name}"? Products in this category will become unassigned.`)) return;
+    setSaving(true);
+    setError("");
+    try {
+      const response = await fetch(`/api/categories?id=${encodeURIComponent(category.id)}`, { method: "DELETE" });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Unable to delete category.");
+      setCategories(current => current.filter(c => c.id !== category.id));
+      setNotice("Category deleted.");
+      if (typeof BroadcastChannel !== "undefined") {
+        const channel = new BroadcastChannel("store-categories");
+        channel.postMessage("updated");
+        channel.close();
+      }
+      closeForm();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <div className={styles.workspace}>
       <div className={styles.toolbar}>
@@ -140,6 +163,11 @@ export default function CategoriesPanel() {
             </div>
             {error && <p className={styles.error} role="alert">{error}</p>}
             <div className={styles.actions}>
+              {form.id && (
+                <button type="button" className={styles.dangerButton} onClick={() => removeCategory(form)} disabled={saving || processing}>
+                  <FiTrash2 aria-hidden="true" />Delete category
+                </button>
+              )}
               <button type="button" className={styles.secondary} onClick={closeForm}>Cancel</button>
               <button type="submit" className={styles.primary} disabled={processing}>{saving ? "Saving…" : form.id ? "Save changes" : "Create category"}</button>
             </div>
@@ -158,7 +186,10 @@ export default function CategoriesPanel() {
               <article className={styles.card} key={category.id}>
                 <div className={styles.cardImage}>{category.image ? <img src={category.image} alt={category.name} /> : <FiImage aria-hidden="true" />}</div>
                 <div className={styles.cardDetails}><h2>{category.name}</h2><span className={category.isVisible !== false ? styles.visible : styles.hidden}>Products {category.isVisible !== false ? "visible" : "hidden"}</span></div>
-                <button className={styles.editButton} type="button" onClick={() => openForm(category)} disabled={saving || processing} aria-label={`Edit ${category.name}`}><FiEdit2 aria-hidden="true" /><span>Edit</span></button>
+                <div className={styles.cardActions}>
+                  <button className={styles.editButton} type="button" onClick={() => openForm(category)} disabled={saving || processing} aria-label={`Edit ${category.name}`}><FiEdit2 aria-hidden="true" /><span>Edit</span></button>
+                  <button className={styles.deleteButton} type="button" onClick={() => removeCategory(category)} disabled={saving || processing} aria-label={`Delete ${category.name}`}><FiTrash2 aria-hidden="true" /><span>Delete</span></button>
+                </div>
               </article>
             ))}
           </div>

@@ -83,15 +83,15 @@ export async function PUT(request) { return saveCategory(request, true); }
 
 export async function DELETE(request) {
   if (await unauthorized(request)) return NextResponse.json({ error: 'Please log in to manage categories.' }, { status: 401 });
-  const slug = new URL(request.url).searchParams.get('slug');
-  if (!slug) return NextResponse.json({ error: 'Slug is required.' }, { status: 400 });
+  const url = new URL(request.url);
+  const slug = url.searchParams.get('slug');
+  const id = url.searchParams.get('id');
+  if (!slug && !id) return NextResponse.json({ error: 'Category slug or ID is required.' }, { status: 400 });
   try {
-    const categories = await prisma.category.findMany();
-    const remaining = categories.filter(category => category.slug !== slug);
-    if (remaining.length === categories.length) return NextResponse.json({ error: 'Category not found.' }, { status: 404 });
-    await prisma.category.delete({ where: { slug } });
+    if (id) await prisma.category.delete({ where: { id } });
+    else await prisma.category.delete({ where: { slug } });
     return NextResponse.json({ message: 'Category deleted.' });
-  } catch {
-    return NextResponse.json({ error: 'Unable to delete category.' }, { status: 500 });
+  } catch (error) {
+    return NextResponse.json({ error: error.code === 'P2025' ? 'Category not found.' : 'Unable to delete category.' }, { status: error.code === 'P2025' ? 404 : 500 });
   }
 }

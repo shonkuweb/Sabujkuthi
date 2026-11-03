@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import imageCompression from "browser-image-compression";
-import { FiBox, FiCheck, FiEdit2, FiImage, FiPlus, FiUpload, FiX } from "react-icons/fi";
+import { FiBox, FiCheck, FiEdit2, FiImage, FiPlus, FiTrash2, FiUpload, FiX } from "react-icons/fi";
 import { useCategories } from "../../hooks/useCategories";
 import styles from "./CategoriesPanel.module.css";
 
@@ -76,6 +76,29 @@ export default function InventoryPanel() {
     finally { setSaving(false); }
   };
 
+  const removeProduct = async product => {
+    if (!window.confirm(`Are you sure you want to delete "${product.title}"? This action cannot be undone.`)) return;
+    setSaving(true);
+    setError("");
+    try {
+      const response = await fetch(`/api/products?id=${encodeURIComponent(product.id)}`, { method: "DELETE" });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Unable to delete product.");
+      setProducts(current => current.filter(item => item.id !== product.id));
+      setNotice("Product deleted.");
+      if (typeof BroadcastChannel !== "undefined") {
+        const channel = new BroadcastChannel("store-products");
+        channel.postMessage("updated");
+        channel.close();
+      }
+      close();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <div className={styles.workspace}>
       <div className={styles.toolbar}><p>Manage the products displayed in your store.</p><button type="button" className={styles.primary} onClick={() => openForm()} disabled={saving || processing || loading || !!loadError || !categories.length}><FiPlus aria-hidden="true" />Add product</button></div>
@@ -119,10 +142,18 @@ export default function InventoryPanel() {
           <div className={styles.visibility}><div><label htmlFor="product-demo-metrics">Sample reviews & viewer count</label><p>Shows clearly labelled demo statistics on the product page.</p></div><button id="product-demo-metrics" type="button" role="switch" aria-label="Sample reviews and viewer count" aria-checked={form.demoMetrics} className={styles.switch} onClick={() => change('demoMetrics', !form.demoMetrics)}><span /></button></div>
           <div className={styles.visibility}><div><label htmlFor="product-stock">In stock</label><p>Turn off to display this product as sold out.</p></div><button id="product-stock" type="button" role="switch" aria-label="In stock" aria-checked={form.inStock} className={styles.switch} onClick={() => change("inStock", !form.inStock)}><span /></button></div>
           {error && <p className={styles.error} role="alert">{error}</p>}
-          <div className={styles.actions}><button type="button" className={styles.secondary} onClick={close}>Cancel</button><button className={styles.primary} type="submit" disabled={processing}>{saving ? "Saving…" : form.id ? "Save changes" : "Add product"}</button></div>
+          <div className={styles.actions}>
+            {form.id && (
+              <button type="button" className={styles.dangerButton} onClick={() => removeProduct(form)} disabled={saving || processing}>
+                <FiTrash2 aria-hidden="true" />Delete product
+              </button>
+            )}
+            <button type="button" className={styles.secondary} onClick={close}>Cancel</button>
+            <button className={styles.primary} type="submit" disabled={processing}>{saving ? "Saving…" : form.id ? "Save changes" : "Add product"}</button>
+          </div>
         </fieldset>
       </form>}
-      {loading ? <div className={styles.empty} role="status">Loading inventory…</div> : loadError ? <div className={styles.empty}><p role="alert">{loadError}</p><button type="button" className={styles.secondary} onClick={load}>Try again</button></div> : !products.length ? !form && <div className={styles.empty}><span className={styles.emptyIcon}><FiBox aria-hidden="true" /></span><h2>No products yet</h2><p>Add your first product and assign it to a category.</p></div> : <><p className={styles.count}>{products.length} {products.length === 1 ? "product" : "products"}</p><div className={styles.grid}>{products.map(product => <article className={styles.card} key={product.id}><div className={styles.cardImage}>{product.image ? <img src={product.image} alt={product.title} /> : <FiImage aria-hidden="true" />}</div><div className={styles.cardDetails}><h2>{product.title}</h2><p className={styles.hint}>{categories.find(category => category.id === product.categoryId)?.name || "Assign a category"} · ₹{product.price}</p><span className={product.inStock ? styles.visible : styles.hidden}>{product.inStock ? "In stock" : "Sold out"}</span></div><button type="button" className={styles.editButton} aria-label={`Edit ${product.title}`} disabled={saving || processing} onClick={() => openForm(product)}><FiEdit2 aria-hidden="true" /><span>Edit</span></button></article>)}</div></>}
+      {loading ? <div className={styles.empty} role="status">Loading inventory…</div> : loadError ? <div className={styles.empty}><p role="alert">{loadError}</p><button type="button" className={styles.secondary} onClick={load}>Try again</button></div> : !products.length ? !form && <div className={styles.empty}><span className={styles.emptyIcon}><FiBox aria-hidden="true" /></span><h2>No products yet</h2><p>Add your first product and assign it to a category.</p></div> : <><p className={styles.count}>{products.length} {products.length === 1 ? "product" : "products"}</p><div className={styles.grid}>{products.map(product => <article className={styles.card} key={product.id}><div className={styles.cardImage}>{product.image ? <img src={product.image} alt={product.title} /> : <FiImage aria-hidden="true" />}</div><div className={styles.cardDetails}><h2>{product.title}</h2><p className={styles.hint}>{categories.find(category => category.id === product.categoryId)?.name || "Assign a category"} · ₹{product.price}</p><span className={product.inStock ? styles.visible : styles.hidden}>{product.inStock ? "In stock" : "Sold out"}</span></div><div className={styles.cardActions}><button type="button" className={styles.editButton} aria-label={`Edit ${product.title}`} disabled={saving || processing} onClick={() => openForm(product)}><FiEdit2 aria-hidden="true" /><span>Edit</span></button><button type="button" className={styles.deleteButton} aria-label={`Delete ${product.title}`} disabled={saving || processing} onClick={() => removeProduct(product)}><FiTrash2 aria-hidden="true" /><span>Delete</span></button></div></article>)}</div></>}
     </div>
   );
 }

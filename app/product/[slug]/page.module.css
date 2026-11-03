@@ -11,10 +11,10 @@
 .titleRow h1 { font-size: 19px; line-height: 1.35; margin: 0; font-weight: 700; overflow-wrap: anywhere; }
 .favorite { display: grid; place-items: center; width: 36px; height: 36px; margin: -4px -4px 0 0; flex-shrink: 0; border: 0; background: transparent; color: #c7ccc4; cursor: pointer; }
 .favorite svg { width: 24px; height: 24px; }
-.saved { color: #ef704b; }
-.saved svg { fill: #fff0eb; }
-.sold { display: inline-flex; gap: 8px; align-items: center; border: 1px solid #ffd3c2; padding: 7px 10px; border-radius: 6px; color: #e85727; background: #fff5ef; font-size: 12px; margin: 22px 0 0; }
-.sold svg { color: #ff6d35; width: 17px; height: 17px; }
+.saved { color: #E91E8C; }
+.saved svg { fill: #fde8f3; }
+.sold { display: inline-flex; gap: 8px; align-items: center; border: 1px solid #fbcfe8; padding: 7px 10px; border-radius: 6px; color: #E91E8C; background: #fdf2f8; font-size: 12px; margin: 22px 0 0; }
+.sold svg { color: #E91E8C; width: 17px; height: 17px; }
 .share { display: flex; align-items: center; gap: 15px; margin-top: 24px; margin-bottom: 8px; font-size: 14px; color: #60645d; }
 .share a { display: inline-flex; color: #666c61; }
 .share svg { width: 17px; height: 17px; }
@@ -26,12 +26,12 @@
 .price { display: flex; align-items: baseline; flex-wrap: wrap; gap: 8px; margin: 7px 0 20px; }
 .price > strong { font-size: 25px; line-height: 1.2; }
 .price del { color: #a2a59c; font-size: 12px; }
-.price > span { padding: 4px 7px; border-radius: 8px; font-size: 11px; font-weight: 700; background: #ff5f32; color: #fff; }
+.price > span { padding: 4px 7px; border-radius: 8px; font-size: 11px; font-weight: 700; background: #E91E8C; color: #fff; }
 .viewers { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; font-size: 12px; color: #555c4e; margin: 0 0 16px; }
 .dot { width: 8px; height: 8px; background: #35b563; border-radius: 50%; }
 .delivery { padding: 14px 12px; background: #f0f6ed; border-radius: 9px; margin-bottom: 24px; }
 .delivery label { display: flex; align-items: center; gap: 7px; margin-bottom: 11px; font-weight: 600; font-size: 11px; }
-.delivery label svg { color: #dc5d46; width: 15px; height: 15px; }
+.delivery label svg { color: #E91E8C; width: 15px; height: 15px; }
 .delivery > div { display: flex; gap: 8px; }
 .delivery input { width: 100%; min-width: 0; padding: 10px 12px; border: 1px solid #e0e5dc; border-radius: 6px; background: #fff; color: #333; font-family: inherit; font-size: 12px; }
 .delivery button { border: 0; border-radius: 6px; padding: 9px 17px; color: #fff; background: #326c2d; font: 600 12px Arial, sans-serif; cursor: pointer; }
@@ -44,8 +44,8 @@
 .quantity button svg { width: 12px; height: 12px; }
 .quantity strong, .quantity output { font-size: 13px; font-weight: 600; }
 .buttons { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
-.buttons button { min-height: 44px; padding: 12px 8px; border: 0; border-radius: 6px; background: #ff6532; color: #fff; font: 700 13px Arial, sans-serif; cursor: pointer; }
-.buttons button:hover { background: #ed5828; }
+.buttons button { min-height: 44px; padding: 12px 8px; border: 0; border-radius: 6px; background: #E91E8C; color: #fff; font: 700 13px Arial, sans-serif; cursor: pointer; }
+.buttons button:hover { background: #d0177b; }
 .buttons button:disabled { background: #e7e9e3; color: #a0a59a; cursor: default; }
 .highlights { display: grid; grid-template-columns: repeat(auto-fit, minmax(65px, 1fr)); gap: 8px; padding: 20px 9px; background: #fff; border-top: 1px solid #e3e6df; }
 .highlights > div { display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; }

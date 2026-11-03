@@ -87,10 +87,13 @@ export async function POST(request) { return save(request, false); }
 export async function PUT(request) { return save(request, true); }
 export async function DELETE(request) {
   if (!await authorized(request)) return NextResponse.json({ error: 'Please log in to manage products.' }, { status: 401 });
-  const slug = new URL(request.url).searchParams.get('slug');
-  if (!slug) return NextResponse.json({ error: 'Product slug is required.' }, { status: 400 });
+  const url = new URL(request.url);
+  const slug = url.searchParams.get('slug');
+  const id = url.searchParams.get('id');
+  if (!slug && !id) return NextResponse.json({ error: 'Product slug or ID is required.' }, { status: 400 });
   try {
-    await prisma.product.delete({ where: { slug } });
+    if (id) await prisma.product.delete({ where: { id } });
+    else await prisma.product.delete({ where: { slug } });
     return NextResponse.json({ success: true });
   } catch (error) {
     return NextResponse.json({ error: error.code === 'P2025' ? 'Product not found.' : 'Unable to delete product.' }, { status: error.code === 'P2025' ? 404 : 500 });

@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { FiCheck, FiDownload, FiPhone, FiRefreshCw, FiShoppingBag, FiX } from "react-icons/fi";
+import { FiCheck, FiDownload, FiPhone, FiRefreshCw, FiShoppingBag, FiTrash2, FiX } from "react-icons/fi";
 import { FaLeaf } from "react-icons/fa";
 import { orderStages, orderStageIndex } from "../../../lib/order-status.mjs";
 import styles from "./OrdersPanel.module.css";
@@ -12,7 +12,7 @@ function OrderProgress({ stage }) {
   return <div className={styles.progressWrap}><span className={styles.progressLine} aria-hidden="true"><span style={{ width: `${stage / (orderStages.length - 1) * 100}%` }} /></span><ol className={styles.progress} aria-label="Order fulfilment progress">{orderStages.map((item,index) => <li key={item.key} className={index <= stage ? styles.reached : ''} aria-current={index === stage ? 'step' : undefined}><span className={styles.step}>{index <= stage ? <FiCheck aria-hidden="true" /> : index + 1}</span><span className={styles.stepLabel}>{item.label}</span></li>)}</ol></div>;
 }
 
-function OrderDetails({ order, close, updated }) {
+function OrderDetails({ order, close, updated, deleted }) {
   const ref = useRef(null);
   const [stage, setStage] = useState(orderStageIndex(order.fulfillmentStatus));
   const [saving, setSaving] = useState(false);
@@ -45,6 +45,20 @@ function OrderDetails({ order, close, updated }) {
       document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
     }catch(error){setError(error.message);}finally{setDownloading(false);}
   };
+  const deleteOrder = async () => {
+    if (!window.confirm(`Permanently delete order #${order.receipt} for ${order.customerName}? This action cannot be undone.`)) return;
+    setSaving(true); setError('');
+    try {
+      const response = await fetch(`/api/admin/orders/${order.id}`, { method: 'DELETE' });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Unable to delete order.');
+      deleted(order.id);
+      close();
+    } catch (err) {
+      setError(err.message);
+      setSaving(false);
+    }
+  };
   return <dialog ref={ref} className={styles.modal} aria-labelledby="order-detail-title" onCancel={event=>{event.preventDefault();if(!busy)close();}} onClick={event=>{if(event.target===event.currentTarget&&!busy)close();}}>
     <header className={styles.modalHeader}><div><span>ORDER DETAILS</span><h2 id="order-detail-title">#{order.receipt}</h2></div><button type="button" aria-label="Close order details" onClick={close} disabled={busy}><FiX /></button></header>
     <div className={styles.modalBody}>
@@ -55,6 +69,7 @@ function OrderDetails({ order, close, updated }) {
       <section className={styles.fullItems}><h3>Order items</h3>{order.items.map((item,index)=><div key={JSON.stringify([item.slug,item.variant,index])}><div><strong>{item.title}</strong>{item.variant&&<span>{item.variant}</span>}<span>Qty: {item.qty} · {money(item.unitAmount)} each</span></div><strong>{money(item.unitAmount*item.qty)}</strong></div>)}</section>
       <div className={styles.totals}><p><span>Items subtotal</span><strong>{money(order.subtotal)}</strong></p><p><span>Delivery</span><strong>{order.shipping?money(order.shipping):'FREE'}</strong></p><p><span>Total paid</span><strong>{money(order.total)}</strong></p></div>
       <button type="button" className={styles.download} disabled={busy} onClick={download}><FiDownload aria-hidden="true" />{downloading?'Preparing invoice…':'Download invoice PDF'}</button>
+      <button type="button" className={styles.deleteOrder} disabled={busy} onClick={deleteOrder}><FiTrash2 aria-hidden="true" />{order.fulfillmentStatus === 'Delivered' ? 'Delete completed order' : 'Delete order'}</button>
     </div>
   </dialog>;
 }
@@ -78,12 +93,37 @@ export default function OrdersPanel({ active }) {
     <div className={styles.toolbar}><p>Paid orders and their fulfilment progress.</p><button type="button" onClick={()=>load()} aria-label="Refresh paid orders"><FiRefreshCw aria-hidden="true" />Refresh</button></div>
     {loading?<p className={styles.empty} role="status">Loading paid orders…</p>:error?<div className={styles.empty}><p role="alert">{error}</p>{needsLogin&&<Link href="/admin/login">Sign in again</Link>}</div>:!orders.length?<div className={styles.empty}><FiShoppingBag aria-hidden="true" /><h2>No paid orders yet</h2><p>Orders appear here after payment is confirmed.</p></div>:<><p className={styles.count}>{orders.length} paid {orders.length===1?'order':'orders'}</p><div className={styles.list}>{orders.map(order=>{const stage=orderStageIndex(order.fulfillmentStatus);const initials=order.customerName.trim().split(/\s+/).slice(0,2).map(part=>part[0]).join('').toUpperCase();return <article key={order.id} className={styles.card}>
       <button type="button" className={styles.cardOpen} aria-label={`View order ${order.receipt} for ${order.customerName}`} aria-haspopup="dialog" onClick={event=>{trigger.current=event.currentTarget;setSelectedId(order.id);}} />
-      <div className={styles.cardHeader}><div><strong title={order.receipt}>#{order.receipt}</strong><span>{date(order.paidAt)}</span></div><strong>{money(order.total)}</strong></div>
+      <div className={styles.cardHeader}>
+        <div><strong title={order.receipt}>#{order.receipt}</strong><span>{date(order.paidAt)}</span></div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <strong>{money(order.total)}</strong>
+          {order.fulfillmentStatus === 'Delivered' && (
+            <button
+              type="button"
+              className={styles.cardDelete}
+              title="Delete completed order"
+              aria-label={`Delete order ${order.receipt}`}
+              onClick={event => {
+                event.stopPropagation();
+                if (window.confirm(`Delete completed order #${order.receipt}?`)) {
+                  fetch(`/api/admin/orders/${order.id}`, { method: 'DELETE' })
+                    .then(r => r.json())
+                    .then(data => {
+                      if (data.success) setOrders(current => current.filter(o => o.id !== order.id));
+                    });
+                }
+              }}
+            >
+              <FiTrash2 aria-hidden="true" />
+            </button>
+          )}
+        </div>
+      </div>
       <div className={styles.buyer}><span className={styles.avatar}>{initials}</span><div><strong>{order.customerName}</strong><span><FiPhone aria-hidden="true" />{order.phone}</span></div>{order.paymentMode==='test'&&<em>Test</em>}</div>
       <div className={styles.preview}><h3>ORDER ITEMS:</h3>{order.items.slice(0,2).map((item,index)=><p key={index}><FaLeaf aria-hidden="true" /><span>{item.title} (Qty: {item.qty}, {money(item.unitAmount)} each)</span></p>)}{order.items.length>2&&<span className={styles.more}>+{order.items.length-2} more items</span>}</div>
       <div className={styles.statusHeading}><h3>ORDER STATUS</h3><span className={styles.badge}><i aria-hidden="true" />{orderStages[stage].badge}</span></div>
       <OrderProgress stage={stage} />
     </article>;})}</div></>}
-    {selected&&<OrderDetails key={selected.id} order={selected} close={close} updated={(id,fulfillmentStatus)=>setOrders(current=>current.map(order=>order.id===id?{...order,fulfillmentStatus}:order))} />}
+    {selected&&<OrderDetails key={selected.id} order={selected} close={close} updated={(id,fulfillmentStatus)=>setOrders(current=>current.map(order=>order.id===id?{...order,fulfillmentStatus}:order))} deleted={id=>setOrders(current=>current.filter(order=>order.id!==id))} />}
   </div>;
 }

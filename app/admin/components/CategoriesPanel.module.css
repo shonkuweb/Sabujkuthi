@@ -49,6 +49,11 @@
 .hidden { background: #f1f2f1; color: #7e8580; }
 .editButton { display: inline-flex; align-items: center; gap: 6px; padding: 8px; border: 0; border-radius: 6px; background: transparent; color: #617b6b; font-size: 12px; cursor: pointer; }
 .editButton:hover { background: #f0f6f2; }
+.cardActions { display: flex; align-items: center; gap: 4px; }
+.deleteButton { display: inline-flex; align-items: center; gap: 6px; padding: 8px; border: 0; border-radius: 6px; background: transparent; color: #c0392b; font-size: 12px; cursor: pointer; }
+.deleteButton:hover { background: #fff1ef; color: #a93226; }
+.dangerButton { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 11px 15px; border-radius: 8px; border: 1px solid #f5c6cb; background: #fff5f5; color: #c0392b; font: 600 12px Inter, Arial, sans-serif; cursor: pointer; white-space: nowrap; margin-right: auto; }
+.dangerButton:hover { background: #ffebeb; border-color: #f1b0b7; }
 @media (max-width: 800px) { .grid { grid-template-columns: 1fr; } }
 @media (max-width: 480px) {
   .toolbar { align-items: flex-start; flex-direction: column; }
