@@ -16,6 +16,7 @@ export default function CategoriesPanel() {
   const [notice, setNotice] = useState("");
   const [saving, setSaving] = useState(false);
   const [processing, setProcessing] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
   const nameRef = useRef(null);
   const addRef = useRef(null);
   const fileRef = useRef(null);
@@ -59,12 +60,11 @@ export default function CategoriesPanel() {
     setForm(null);
     setError("");
     setProcessing(false);
+    setIsDragging(false);
     addRef.current?.focus();
   };
 
-  const chooseImage = async (event) => {
-    const file = event.target.files?.[0];
-    event.target.value = "";
+  const handleFile = async (file) => {
     if (!file) return;
     setError("");
     if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
@@ -86,6 +86,12 @@ export default function CategoriesPanel() {
     } finally {
       if (version === imageVersion.current) setProcessing(false);
     }
+  };
+
+  const chooseImage = async (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    handleFile(file);
   };
 
   const save = async (event) => {
@@ -159,12 +165,29 @@ export default function CategoriesPanel() {
             <label className={styles.label} htmlFor="category-name">Category name</label>
             <input ref={nameRef} id="category-name" className={styles.nameInput} value={form.name} maxLength={80} placeholder="e.g. Adenium, Fruit Plants" required onChange={event => setForm({ ...form, name: event.target.value })} />
             <span className={styles.label}>Thumbnail</span>
-            <div className={styles.imagePicker}>
-              <div className={styles.preview}>{form.image ? <img src={form.image} alt="Category thumbnail preview" /> : <FiImage aria-hidden="true" />}</div>
+            <div
+              className={`${styles.imagePicker} ${isDragging ? styles.imagePickerDragging : ""}`}
+              onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+              onDragEnter={(e) => { e.preventDefault(); setIsDragging(true); }}
+              onDragLeave={(e) => { e.preventDefault(); setIsDragging(false); }}
+              onDrop={(e) => {
+                e.preventDefault();
+                setIsDragging(false);
+                const file = e.dataTransfer.files?.[0];
+                if (file) handleFile(file);
+              }}
+            >
+              <div
+                className={`${styles.preview} ${isDragging ? styles.previewDragging : ""}`}
+                onClick={() => fileRef.current?.click()}
+                title="Click or drag and drop image here"
+              >
+                {form.image ? <img src={form.image} alt="Category thumbnail preview" /> : isDragging ? <FiUpload aria-hidden="true" /> : <FiImage aria-hidden="true" />}
+              </div>
               <div>
                 <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp" aria-label="Upload category thumbnail" className={styles.fileInput} onChange={chooseImage} disabled={processing} />
                 <button type="button" className={styles.secondary} onClick={() => fileRef.current?.click()} disabled={processing}><FiUpload aria-hidden="true" />{processing ? "Preparing image…" : form.image ? "Change image" : "Upload image"}</button>
-                <p className={styles.hint}>JPG, PNG or WebP, up to 10 MB.</p>
+                <p className={styles.hint}>JPG, PNG or WebP, up to 10 MB. Drag & drop image here.</p>
                 {form.image && <button type="button" className={styles.textButton} onClick={() => setForm({ ...form, image: "" })} disabled={processing}>Remove image</button>}
               </div>
             </div>

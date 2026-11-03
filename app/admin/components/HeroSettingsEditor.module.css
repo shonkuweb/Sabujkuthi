@@ -57,3 +57,55 @@
   align-items: center;
   gap: 6px;
 }
+
+.dropzone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 24px 20px;
+  border: 2px dashed #c9d8ce;
+  border-radius: 12px;
+  background: #f7faf8;
+  cursor: pointer;
+  transition: all .15s ease;
+  text-align: center;
+  color: #556c5e;
+  margin-top: 14px;
+}
+
+.dropzone:hover {
+  border-color: #26784a;
+  background: #f0f7f2;
+}
+
+.dropzoneDragging {
+  border-color: #26784a !important;
+  background: #eaf5ee !important;
+  box-shadow: 0 0 0 4px rgba(38, 120, 74, 0.2);
+}
+
+.dropzoneIcon {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #e3eee6;
+  color: #26784a;
+  font-size: 22px;
+}
+
+.dropzoneText strong {
+  display: block;
+  font-size: 13px;
+  color: #243a2c;
+  margin-bottom: 4px;
+}
+
+.dropzoneText span {
+  display: block;
+  font-size: 11px;
+  color: #7d8e82;
+}

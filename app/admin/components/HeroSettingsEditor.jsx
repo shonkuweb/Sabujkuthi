@@ -12,6 +12,7 @@ export default function HeroSettingsEditor({ onSavingChange }) {
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [saving, setSaving] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef(null);
 
   const load = async () => {
@@ -34,78 +35,90 @@ export default function HeroSettingsEditor({ onSavingChange }) {
     onSavingChange(saving || uploading);
   }, [saving, uploading, onSavingChange]);
 
-  const handleUploadImage = async (event) => {
-    const file = event.target.files?.[0];
-    event.target.value = "";
-    if (!file) return;
-
+  const processFiles = async (fileList) => {
+    if (!fileList || !fileList.length) return;
     setError("");
     setNotice("");
 
-    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
-      setError("Please select a valid image file (JPG, PNG, or WebP).");
+    const currentCount = (settings.heroImages || []).length;
+    if (currentCount >= 5) {
+      setError("Maximum 5 hero banner images allowed. Remove an image to add a new one.");
       return;
     }
 
-    if (file.size > 10 * 1024 * 1024) {
-      setError("Selected image must be under 10 MB.");
-      return;
-    }
-
-    if ((settings.heroImages || []).length >= 5) {
-      setError("You can upload a maximum of 5 images for the hero banner.");
-      return;
-    }
+    const availableSlots = 5 - currentCount;
+    const filesToUpload = Array.from(fileList).slice(0, availableSlots);
 
     setUploading(true);
+    const uploadedUrls = [];
+
     try {
-      // Compress the image before uploading to optimize quality and avoid proxy/Nginx size limits
-      let compressedFile = file;
-      try {
-        compressedFile = await imageCompression(file, {
-          maxSizeMB: 0.8,
-          maxWidthOrHeight: 1920,
-          useWebWorker: true,
-        });
-      } catch (compErr) {
-        console.warn("Client compression skipped, using original:", compErr);
-      }
-
-      const dataUrl = await imageCompression.getDataUrlFromFile(compressedFile);
-
-      const res = await fetch("/api/upload", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          dataUrl,
-          filename: file.name || "hero_banner.jpg",
-        }),
-      });
-
-      const rawText = await res.text();
-      let data;
-      try {
-        data = JSON.parse(rawText);
-      } catch {
-        if (res.status === 413) {
-          throw new Error("The image is too large for the web server (413 Payload Too Large). Please choose a smaller image.");
+      for (const file of filesToUpload) {
+        if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+          throw new Error(`"${file.name}" is not a supported format. Please choose JPG, PNG, or WebP.`);
         }
-        throw new Error(`Upload failed (status ${res.status}). Server returned an unexpected response.`);
-      }
 
-      if (!res.ok || !data.url) {
-        throw new Error(data.error || "Failed to upload image to Cloudflare R2.");
+        let compressedFile = file;
+        try {
+          compressedFile = await imageCompression(file, {
+            maxSizeMB: 0.8,
+            maxWidthOrHeight: 1920,
+            useWebWorker: true,
+          });
+        } catch (compErr) {
+          console.warn("Client compression skipped, using original:", compErr);
+        }
+
+        const dataUrl = await imageCompression.getDataUrlFromFile(compressedFile);
+
+        const res = await fetch("/api/upload", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            dataUrl,
+            filename: file.name || "hero_banner.jpg",
+          }),
+        });
+
+        const rawText = await res.text();
+        let data;
+        try {
+          data = JSON.parse(rawText);
+        } catch {
+          if (res.status === 413) {
+            throw new Error(`"${file.name}" is too large for the web server (413).`);
+          }
+          throw new Error(`Upload failed (status ${res.status}).`);
+        }
+
+        if (!res.ok || !data.url) {
+          throw new Error(data.error || `Failed to upload "${file.name}" to Cloudflare R2.`);
+        }
+
+        uploadedUrls.push(data.url);
       }
 
       setSettings((current) => ({
         ...current,
-        heroImages: [...(current.heroImages || []), data.url].slice(0, 5),
+        heroImages: [...(current.heroImages || []), ...uploadedUrls].slice(0, 5),
       }));
-      setNotice("Image uploaded to Cloudflare R2 successfully.");
+      setNotice(
+        uploadedUrls.length === 1
+          ? "Image uploaded to Cloudflare R2 successfully."
+          : `${uploadedUrls.length} images uploaded to Cloudflare R2 successfully.`
+      );
     } catch (err) {
-      setError(err.message || "Failed to upload image.");
+      setError(err.message || "Failed to upload image(s).");
     } finally {
       setUploading(false);
+    }
+  };
+
+  const handleUploadImage = (event) => {
+    const files = event.target.files;
+    event.target.value = "";
+    if (files && files.length) {
+      processFiles(files);
     }
   };
 
@@ -285,19 +298,53 @@ export default function HeroSettingsEditor({ onSavingChange }) {
             ref={fileInputRef}
             className={styles.fileInput}
             type="file"
+            multiple
             accept="image/jpeg,image/png,image/webp"
             disabled={uploading || saving || heroImages.length >= 5}
             onChange={handleUploadImage}
           />
-          <button
-            type="button"
-            className={styles.secondary}
-            disabled={uploading || saving || heroImages.length >= 5}
-            onClick={() => fileInputRef.current?.click()}
+
+          <div
+            className={`${heroStyles.dropzone} ${isDragging ? heroStyles.dropzoneDragging : ""}`}
+            onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+            onDragEnter={(e) => { e.preventDefault(); setIsDragging(true); }}
+            onDragLeave={(e) => { e.preventDefault(); setIsDragging(false); }}
+            onDrop={(e) => {
+              e.preventDefault();
+              setIsDragging(false);
+              if (!uploading && !saving && heroImages.length < 5) {
+                processFiles(e.dataTransfer.files);
+              }
+            }}
+            onClick={() => {
+              if (!uploading && !saving && heroImages.length < 5) {
+                fileInputRef.current?.click();
+              }
+            }}
+            role="button"
+            tabIndex={0}
+            aria-label="Upload hero banner images"
           >
-            <FiUpload aria-hidden="true" />
-            {uploading ? "Uploading to Cloudflare R2…" : heroImages.length >= 5 ? "Max 5 images reached" : "Upload image"}
-          </button>
+            <span className={heroStyles.dropzoneIcon}>
+              <FiUpload aria-hidden="true" />
+            </span>
+            <div className={heroStyles.dropzoneText}>
+              <strong>
+                {uploading
+                  ? "Uploading to Cloudflare R2…"
+                  : isDragging
+                  ? "Drop image(s) here"
+                  : heroImages.length >= 5
+                  ? "Maximum 5 images reached"
+                  : "Drag & drop images here, or click to browse"}
+              </strong>
+              <span>
+                {heroImages.length >= 5
+                  ? "Remove an image above to add new ones"
+                  : "Select or drop up to 5 JPG, PNG or WebP images. Optimized & uploaded to R2 automatically."}
+              </span>
+            </div>
+          </div>
 
           {/* Below Ticker Text */}
           <h3 className={styles.fieldHeading}>Below Ticker Text</h3>

@@ -18,6 +18,8 @@ export default function InventoryPanel() {
   const [notice, setNotice] = useState("");
   const [saving, setSaving] = useState(false);
   const [processing, setProcessing] = useState(false);
+  const [isDraggingPrimary, setIsDraggingPrimary] = useState(false);
+  const [isDraggingSecondary, setIsDraggingSecondary] = useState(false);
   const fileRef = useRef(null);
   const fileRef2 = useRef(null);
   const nameRef = useRef(null);
@@ -42,12 +44,10 @@ export default function InventoryPanel() {
     setForm(product ? { ...blank, ...product, oldPrice: product.oldPrice || "", image: product.image || "", image2: product.image2 || "", description: product.description || "", categoryId: product.categoryId || "", ...Object.fromEntries(["plantCare", "deliveryReturns", "deliveryNote", "deliveryPincodes", "replacementInfo", "deliveryInfo", "supportInfo", "packagingInfo", "soldLast24Hours"].map(key => [key, product[key] ?? ""])) } : { ...blank });
     setError(""); setNotice(""); setProcessing(false);
   };
-  const close = () => { imageVersion.current++; setForm(null); setProcessing(false); setError(""); };
+  const close = () => { imageVersion.current++; setForm(null); setProcessing(false); setError(""); setIsDraggingPrimary(false); setIsDraggingSecondary(false); };
   const change = (key, value) => setForm(current => ({ ...current, [key]: value }));
 
-  const upload = async (event, field = 'image') => {
-    const file = event.target.files?.[0];
-    event.target.value = "";
+  const processFile = async (file, field = 'image') => {
     if (!file) return;
     setError("");
     if (!["image/jpeg", "image/png", "image/webp"].includes(file.type) || file.size > 10 * 1024 * 1024) {
@@ -61,6 +61,12 @@ export default function InventoryPanel() {
       if (version === imageVersion.current) setForm(current => current ? { ...current, [field]: image } : null);
     } catch { if (version === imageVersion.current) setError("Unable to read this image. Choose another image."); }
     finally { if (version === imageVersion.current) setProcessing(false); }
+  };
+
+  const upload = async (event, field = 'image') => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    processFile(file, field);
   };
 
   const save = async event => {
@@ -120,11 +126,60 @@ export default function InventoryPanel() {
           <div className={styles.formColumns}>
             <div>
               <span className={styles.label} style={{ fontSize: 11, color: '#68786e', marginBottom: 6 }}>Primary image</span>
-              <div className={styles.imagePicker}><div className={styles.preview}>{form.image ? <img src={form.image} alt="Product image preview" /> : <FiImage aria-hidden="true" />}</div><div><input ref={fileRef} className={styles.fileInput} type="file" accept="image/jpeg,image/png,image/webp" aria-label="Upload product image" disabled={processing} onChange={e => upload(e, 'image')} /><button type="button" className={styles.secondary} disabled={processing} onClick={() => fileRef.current?.click()}><FiUpload aria-hidden="true" />{processing ? "Preparing…" : form.image ? "Change image" : "Upload image"}</button>{form.image && <button type="button" className={styles.textButton} disabled={processing} onClick={() => change("image", "")}>Remove image</button>}</div></div>
+              <div
+                className={`${styles.imagePicker} ${isDraggingPrimary ? styles.imagePickerDragging : ""}`}
+                onDragOver={(e) => { e.preventDefault(); setIsDraggingPrimary(true); }}
+                onDragEnter={(e) => { e.preventDefault(); setIsDraggingPrimary(true); }}
+                onDragLeave={(e) => { e.preventDefault(); setIsDraggingPrimary(false); }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  setIsDraggingPrimary(false);
+                  const file = e.dataTransfer.files?.[0];
+                  if (file) processFile(file, 'image');
+                }}
+              >
+                <div
+                  className={`${styles.preview} ${isDraggingPrimary ? styles.previewDragging : ""}`}
+                  onClick={() => fileRef.current?.click()}
+                  title="Click or drag and drop image here"
+                >
+                  {form.image ? <img src={form.image} alt="Product image preview" /> : isDraggingPrimary ? <FiUpload aria-hidden="true" /> : <FiImage aria-hidden="true" />}
+                </div>
+                <div>
+                  <input ref={fileRef} className={styles.fileInput} type="file" accept="image/jpeg,image/png,image/webp" aria-label="Upload product image" disabled={processing} onChange={e => upload(e, 'image')} />
+                  <button type="button" className={styles.secondary} disabled={processing} onClick={() => fileRef.current?.click()}><FiUpload aria-hidden="true" />{processing ? "Preparing…" : form.image ? "Change image" : "Upload image"}</button>
+                  <p className={styles.hint}>Drag & drop image here</p>
+                  {form.image && <button type="button" className={styles.textButton} disabled={processing} onClick={() => change("image", "")}>Remove image</button>}
+                </div>
+              </div>
             </div>
             <div>
               <span className={styles.label} style={{ fontSize: 11, color: '#68786e', marginBottom: 6 }}>Second image (optional, carousel)</span>
-              <div className={styles.imagePicker}><div className={styles.preview}>{form.image2 ? <img src={form.image2} alt="Second image preview" /> : <FiImage aria-hidden="true" />}</div><div><input ref={fileRef2} className={styles.fileInput} type="file" accept="image/jpeg,image/png,image/webp" aria-label="Upload second product image" disabled={processing} onChange={e => upload(e, 'image2')} /><button type="button" className={styles.secondary} disabled={processing} onClick={() => fileRef2.current?.click()}><FiUpload aria-hidden="true" />{processing ? "Preparing…" : form.image2 ? "Change image" : "Upload image"}</button>{form.image2 && <button type="button" className={styles.textButton} disabled={processing} onClick={() => change("image2", "")}>Remove image</button>}</div></div>
+              <div
+                className={`${styles.imagePicker} ${isDraggingSecondary ? styles.imagePickerDragging : ""}`}
+                onDragOver={(e) => { e.preventDefault(); setIsDraggingSecondary(true); }}
+                onDragEnter={(e) => { e.preventDefault(); setIsDraggingSecondary(true); }}
+                onDragLeave={(e) => { e.preventDefault(); setIsDraggingSecondary(false); }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  setIsDraggingSecondary(false);
+                  const file = e.dataTransfer.files?.[0];
+                  if (file) processFile(file, 'image2');
+                }}
+              >
+                <div
+                  className={`${styles.preview} ${isDraggingSecondary ? styles.previewDragging : ""}`}
+                  onClick={() => fileRef2.current?.click()}
+                  title="Click or drag and drop image here"
+                >
+                  {form.image2 ? <img src={form.image2} alt="Second image preview" /> : isDraggingSecondary ? <FiUpload aria-hidden="true" /> : <FiImage aria-hidden="true" />}
+                </div>
+                <div>
+                  <input ref={fileRef2} className={styles.fileInput} type="file" accept="image/jpeg,image/png,image/webp" aria-label="Upload second product image" disabled={processing} onChange={e => upload(e, 'image2')} /><button type="button" className={styles.secondary} disabled={processing} onClick={() => fileRef2.current?.click()}><FiUpload aria-hidden="true" />{processing ? "Preparing…" : form.image2 ? "Change image" : "Upload image"}</button>
+                  <p className={styles.hint}>Drag & drop image here</p>
+                  {form.image2 && <button type="button" className={styles.textButton} disabled={processing} onClick={() => change("image2", "")}>Remove image</button>}
+                </div>
+              </div>
             </div>
           </div>
           <p className={styles.hint} style={{ marginTop: -14, marginBottom: 20 }}>JPG, PNG or WebP, up to 10 MB per image. Both images will show as an interactive carousel on the product details page.</p>
