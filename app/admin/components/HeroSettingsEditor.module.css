@@ -1,0 +1,59 @@
+.imageList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 14px 0 20px;
+}
+
+.imageCard {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 14px;
+  border: 1px solid #e1e9dd;
+  background: #fbfcfa;
+  border-radius: 10px;
+}
+
+.imageThumb {
+  width: 70px;
+  height: 52px;
+  border-radius: 6px;
+  overflow: hidden;
+  background: #edf3ee;
+  flex-shrink: 0;
+}
+
+.imageThumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.imageInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.imageInfo strong {
+  display: block;
+  font-size: 13px;
+  color: #243a2c;
+  margin-bottom: 3px;
+}
+
+.imageInfo span {
+  display: block;
+  font-size: 11px;
+  color: #839185;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.imageActions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}

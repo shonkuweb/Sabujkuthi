@@ -12,7 +12,10 @@ function validate(data) {
   if (typeof data.name !== 'string' || !data.name.trim() || data.name.trim().length > 80) {
     return 'Enter a category name between 1 and 80 characters.';
   }
-  if (typeof data.isVisible !== 'boolean') return 'Visibility must be enabled or disabled.';
+  if (data.isVisible != null && typeof data.isVisible !== 'boolean') return 'Visibility must be enabled or disabled.';
+  if (data.isVisibleInNav != null && typeof data.isVisibleInNav !== 'boolean') return 'Navbar visibility must be enabled or disabled.';
+  if (data.isVisibleInGrid != null && typeof data.isVisibleInGrid !== 'boolean') return 'Product grid visibility must be enabled or disabled.';
+  if (data.isVisibleInShopBy != null && typeof data.isVisibleInShopBy !== 'boolean') return 'Shop By Category visibility must be enabled or disabled.';
   if (data.image != null && typeof data.image !== 'string') return 'Invalid thumbnail.';
   if (data.image) {
     if (data.image.length > 1400000) return 'Thumbnail is too large. Choose a smaller image.';
@@ -62,11 +65,19 @@ async function saveCategory(request, isUpdate) {
         console.warn('R2 upload failed, preserving provided image:', err);
       }
     }
+    const isVisibleInNav = data.isVisibleInNav !== undefined ? Boolean(data.isVisibleInNav) : (isUpdate && categories[index].isVisibleInNav !== undefined ? categories[index].isVisibleInNav : true);
+    const isVisibleInGrid = data.isVisibleInGrid !== undefined ? Boolean(data.isVisibleInGrid) : (isUpdate && categories[index].isVisibleInGrid !== undefined ? categories[index].isVisibleInGrid : true);
+    const isVisibleInShopBy = data.isVisibleInShopBy !== undefined ? Boolean(data.isVisibleInShopBy) : (isUpdate && categories[index].isVisibleInShopBy !== undefined ? categories[index].isVisibleInShopBy : true);
+    const isVisible = data.isVisible !== undefined ? Boolean(data.isVisible) : (isVisibleInNav || isVisibleInGrid || isVisibleInShopBy);
+
     const category = {
       ...(isUpdate ? categories[index] : {}),
       id, slug, name,
       image: imageUrl,
-      isVisible: data.isVisible,
+      isVisible,
+      isVisibleInNav,
+      isVisibleInGrid,
+      isVisibleInShopBy,
     };
     const storedCategory = { ...category, nameKey: name.toLocaleLowerCase() };
     if (isUpdate) await prisma.category.update({ where: { id }, data: storedCategory });

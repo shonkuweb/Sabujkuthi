@@ -15,10 +15,24 @@ try {
       "name" TEXT NOT NULL,
       "nameKey" TEXT NOT NULL,
       "image" TEXT NOT NULL DEFAULT '',
-      "isVisible" BOOLEAN NOT NULL DEFAULT true
+      "isVisible" BOOLEAN NOT NULL DEFAULT true,
+      "isVisibleInNav" BOOLEAN NOT NULL DEFAULT true,
+      "isVisibleInGrid" BOOLEAN NOT NULL DEFAULT true,
+      "isVisibleInShopBy" BOOLEAN NOT NULL DEFAULT true
     );
     CREATE UNIQUE INDEX IF NOT EXISTS "Category_slug_key" ON "Category"("slug");
     CREATE UNIQUE INDEX IF NOT EXISTS "Category_nameKey_key" ON "Category"("nameKey");`);
+    const categoryColumns = db.prepare('PRAGMA table_info(Category)').all();
+    if (categoryColumns.length) {
+      const categoryAdditions = {
+        isVisibleInNav: 'BOOLEAN NOT NULL DEFAULT true',
+        isVisibleInGrid: 'BOOLEAN NOT NULL DEFAULT true',
+        isVisibleInShopBy: 'BOOLEAN NOT NULL DEFAULT true',
+      };
+      for (const [column, definition] of Object.entries(categoryAdditions)) {
+        if (!categoryColumns.some(existing => existing.name === column)) db.exec(`ALTER TABLE Category ADD COLUMN "${column}" ${definition}`);
+      }
+    }
     const productColumns = db.prepare('PRAGMA table_info(Product)').all();
     if (productColumns.length) {
       const additions = {
@@ -36,6 +50,7 @@ try {
         oldPrice: 'TEXT',
         inStock: 'BOOLEAN NOT NULL DEFAULT true',
         isPublished: 'BOOLEAN NOT NULL DEFAULT false',
+        image2: 'TEXT',
       };
       for (const [column, definition] of Object.entries(additions)) {
         if (!productColumns.some(existing => existing.name === column)) db.exec(`ALTER TABLE Product ADD COLUMN "${column}" ${definition}`);
@@ -72,12 +87,12 @@ try {
       const legacyPath = path.join(process.cwd(), 'app/data/categories.json');
       const categories = fs.existsSync(legacyPath) ? JSON.parse(fs.readFileSync(legacyPath, 'utf8')) : [];
       if (!Array.isArray(categories)) throw new Error('Invalid legacy category data');
-      const insert = db.prepare('INSERT OR IGNORE INTO Category (id, slug, name, nameKey, image, isVisible) VALUES (?, ?, ?, ?, ?, ?)');
+      const insert = db.prepare('INSERT OR IGNORE INTO Category (id, slug, name, nameKey, image, isVisible, isVisibleInNav, isVisibleInGrid, isVisibleInShopBy) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
       for (const category of categories) {
         const name = category.name?.trim();
         if (!name) continue;
         const id = String(category.id || randomUUID());
-        insert.run(id, category.slug || `category-${id}`, name, name.toLocaleLowerCase(), category.image || '', category.isVisible === false ? 0 : 1);
+        insert.run(id, category.slug || `category-${id}`, name, name.toLocaleLowerCase(), category.image || '', category.isVisible === false ? 0 : 1, category.isVisibleInNav === false ? 0 : 1, category.isVisibleInGrid === false ? 0 : 1, category.isVisibleInShopBy === false ? 0 : 1);
       }
       db.prepare('INSERT INTO Settings (key, value) VALUES (?, ?)').run(key, 'complete');
     }

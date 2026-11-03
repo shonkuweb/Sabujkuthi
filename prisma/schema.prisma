@@ -32,6 +32,7 @@ model Product {
   soldLast24Hours Int?
   demoMetrics    Boolean @default(true)
   image          String?
+  image2         String?
   type           String?
   rating         Float   @default(0)
   reviews        Int     @default(0)
@@ -48,13 +49,16 @@ model Product {
 }
 
 model Category {
-  id        String  @id @default(uuid())
-  slug      String  @unique
-  name      String
-  nameKey   String  @unique
-  products  Product[]
-  image     String  @default("")
-  isVisible Boolean @default(true)
+  id                String  @id @default(uuid())
+  slug              String  @unique
+  name              String
+  nameKey           String  @unique
+  products          Product[]
+  image             String  @default("")
+  isVisible         Boolean @default(true)
+  isVisibleInNav    Boolean @default(true)
+  isVisibleInGrid   Boolean @default(true)
+  isVisibleInShopBy Boolean @default(true)
 }
 
 model Order {

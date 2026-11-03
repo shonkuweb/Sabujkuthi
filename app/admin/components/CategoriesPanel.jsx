@@ -5,7 +5,7 @@ import imageCompression from "browser-image-compression";
 import { FiCheck, FiEdit2, FiGrid, FiImage, FiPlus, FiTrash2, FiUpload, FiX } from "react-icons/fi";
 import styles from "./CategoriesPanel.module.css";
 
-const emptyForm = { name: "", image: "", isVisible: true };
+const emptyForm = { name: "", image: "", isVisible: true, isVisibleInNav: true, isVisibleInGrid: true, isVisibleInShopBy: true };
 
 export default function CategoriesPanel() {
   const [categories, setCategories] = useState([]);
@@ -41,7 +41,14 @@ export default function CategoriesPanel() {
 
   const openForm = (category) => {
     imageVersion.current++;
-    setForm(category ? { ...category, image: category.image || "", isVisible: category.isVisible !== false } : { ...emptyForm });
+    setForm(category ? {
+      ...category,
+      image: category.image || "",
+      isVisible: category.isVisible !== false,
+      isVisibleInNav: category.isVisibleInNav !== false,
+      isVisibleInGrid: category.isVisibleInGrid !== false,
+      isVisibleInShopBy: category.isVisibleInShopBy !== false,
+    } : { ...emptyForm });
     setError("");
     setNotice("");
     setProcessing(false);
@@ -86,10 +93,14 @@ export default function CategoriesPanel() {
     setSaving(true);
     setError("");
     try {
+      const payload = {
+        ...form,
+        isVisible: Boolean(form.isVisibleInNav || form.isVisibleInGrid || form.isVisibleInShopBy),
+      };
       const response = await fetch("/api/categories", {
         method: form.id ? "PUT" : "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify(payload),
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Unable to save category.");
@@ -158,8 +169,16 @@ export default function CategoriesPanel() {
               </div>
             </div>
             <div className={styles.visibility}>
-              <div><label htmlFor="category-visible">Product visibility</label><p>Show this category’s products in the store.</p></div>
-              <button id="category-visible" type="button" role="switch" aria-checked={form.isVisible} aria-label="Product visibility" className={styles.switch} onClick={() => setForm({ ...form, isVisible: !form.isVisible })}><span /></button>
+              <div><label htmlFor="category-visible-nav">Visible in Navbar</label><p>Show this category in the navigation bar.</p></div>
+              <button id="category-visible-nav" type="button" role="switch" aria-checked={form.isVisibleInNav} aria-label="Visible in Navbar" className={styles.switch} onClick={() => setForm({ ...form, isVisibleInNav: !form.isVisibleInNav })}><span /></button>
+            </div>
+            <div className={styles.visibility}>
+              <div><label htmlFor="category-visible-grid">Visible in home page product grid</label><p>Show this category’s products grid on the home page.</p></div>
+              <button id="category-visible-grid" type="button" role="switch" aria-checked={form.isVisibleInGrid} aria-label="Visible in home page product grid" className={styles.switch} onClick={() => setForm({ ...form, isVisibleInGrid: !form.isVisibleInGrid })}><span /></button>
+            </div>
+            <div className={styles.visibility}>
+              <div><label htmlFor="category-visible-shopby">Visible in Shop BY category section</label><p>Show this category in the Shop By Category section.</p></div>
+              <button id="category-visible-shopby" type="button" role="switch" aria-checked={form.isVisibleInShopBy} aria-label="Visible in Shop BY category section" className={styles.switch} onClick={() => setForm({ ...form, isVisibleInShopBy: !form.isVisibleInShopBy })}><span /></button>
             </div>
             {error && <p className={styles.error} role="alert">{error}</p>}
             <div className={styles.actions}>
@@ -185,7 +204,17 @@ export default function CategoriesPanel() {
             {categories.map(category => (
               <article className={styles.card} key={category.id}>
                 <div className={styles.cardImage}>{category.image ? <img src={category.image} alt={category.name} /> : <FiImage aria-hidden="true" />}</div>
-                <div className={styles.cardDetails}><h2>{category.name}</h2><span className={category.isVisible !== false ? styles.visible : styles.hidden}>Products {category.isVisible !== false ? "visible" : "hidden"}</span></div>
+                <div className={styles.cardDetails}>
+                  <h2>{category.name}</h2>
+                  <div className={styles.badges}>
+                    {category.isVisibleInNav !== false && <span className={styles.visible}>Navbar</span>}
+                    {category.isVisibleInGrid !== false && <span className={styles.visible}>Home Grid</span>}
+                    {category.isVisibleInShopBy !== false && <span className={styles.visible}>Shop By</span>}
+                    {category.isVisibleInNav === false && category.isVisibleInGrid === false && category.isVisibleInShopBy === false && (
+                      <span className={styles.hidden}>Hidden</span>
+                    )}
+                  </div>
+                </div>
                 <div className={styles.cardActions}>
                   <button className={styles.editButton} type="button" onClick={() => openForm(category)} disabled={saving || processing} aria-label={`Edit ${category.name}`}><FiEdit2 aria-hidden="true" /><span>Edit</span></button>
                   <button className={styles.deleteButton} type="button" onClick={() => removeCategory(category)} disabled={saving || processing} aria-label={`Delete ${category.name}`}><FiTrash2 aria-hidden="true" /><span>Delete</span></button>

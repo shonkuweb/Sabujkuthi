@@ -55,13 +55,14 @@
   box-shadow: 0 8px 22px #234c2a06;
   scroll-snap-align: start;
 }
-.stars { display: flex; gap: 2px; color: #f5ad00; }
-.stars svg { width: 21px; height: 21px; }
-.preview { align-self: flex-start; margin-top: 19px; padding: 4px 8px; border-radius: 5px; background: #f2f5f0; color: #798574; font-size: 10px; }
-.quote { margin: 14px 0 26px; color: #61675e; font-size: 14px; line-height: 1.75; font-style: italic; }
-.customer { display: flex; align-items: center; gap: 12px; margin-top: auto; padding-top: 20px; border-top: 1px solid #edf0eb; }
-.avatar { display: grid; place-items: center; flex-shrink: 0; width: 44px; height: 44px; border-radius: 50%; background: #eff5ed; color: #8ba180; }
+.stars { display: flex; gap: 3px; color: #f5ad00; }
+.stars svg { width: 18px; height: 18px; }
+.preview { display: inline-flex; align-items: center; gap: 5px; align-self: flex-start; margin-top: 14px; padding: 4px 9px; border-radius: 6px; background: #edf7ef; color: #277945; font-size: 11px; font-weight: 600; }
+.plantBadge { display: inline-block; margin-top: 6px; color: #4e6b59; font-size: 12px; font-weight: 500; }
+.quote { margin: 12px 0 22px; color: #51594f; font-size: 14px; line-height: 1.7; font-style: normal; }
+.customer { display: flex; align-items: center; gap: 12px; margin-top: auto; padding-top: 18px; border-top: 1px solid #edf0eb; }
+.avatar { display: grid; place-items: center; flex-shrink: 0; width: 44px; height: 44px; border-radius: 50%; background: #eaf3ec; color: #266b3f; font-weight: 700; font-size: 14px; letter-spacing: 0.5px; }
 .avatar svg { width: 22px; height: 22px; }
-.name { display: block; color: #24553c; font-size: 14px; }
-.caption { display: block; margin-top: 5px; color: #939a90; font-size: 12px; }
+.name { display: block; color: #24553c; font-size: 14px; font-weight: 600; }
+.caption { display: block; margin-top: 4px; color: #7f897c; font-size: 12px; }
 @media (min-width: 768px) { .section { padding: 50px 28px 36px; } .section h2 { font-size: 30px; } .section::before, .section::after { width: 240px; height: 165px; } }

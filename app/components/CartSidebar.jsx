@@ -3,9 +3,11 @@
 import Link from "next/link";
 import { FiX, FiMinus, FiPlus, FiTrash2, FiShoppingBag, FiArrowRight } from "react-icons/fi";
 import { useCart } from "../context/CartContext";
+import { useStoreSettings } from "../context/StoreSettingsContext";
 
 export default function CartSidebar() {
   const { items: cartItems, updateQty, removeItem, isSidebarOpen, setIsSidebarOpen } = useCart();
+  const { deliverySettings } = useStoreSettings();
 
   const toAmount = (value) => {
     const match = String(value).replace(/,/g, "").match(/\d+(?:\.\d+)?/);
@@ -14,6 +16,7 @@ export default function CartSidebar() {
 
   const itemCount = cartItems.reduce((sum, i) => sum + i.qty, 0);
   const subtotal = cartItems.reduce((sum, i) => sum + toAmount(i.price) * i.qty, 0);
+  const threshold = deliverySettings?.freeDeliveryThreshold ?? 3999;
 
   return (
     <>
@@ -82,7 +85,14 @@ export default function CartSidebar() {
               <span>Subtotal</span>
               <strong>Rs. {subtotal.toFixed(2)}</strong>
             </div>
-            <p className="tax-shipping-note">Taxes and shipping calculated at checkout.</p>
+            {threshold > 0 && (
+              <p className="tax-shipping-note" style={{ color: subtotal >= threshold ? '#2d7a46' : '#6b7c70', fontWeight: subtotal >= threshold ? 600 : 400 }}>
+                {subtotal >= threshold
+                  ? '🎉 You have unlocked FREE delivery!'
+                  : `Add ₹${(threshold - subtotal).toFixed(2)} more for FREE delivery!`}
+              </p>
+            )}
+            <p className="tax-shipping-note">Taxes and delivery calculated at checkout.</p>
             <Link href="/checkout" className="btn-modern-primary full-width mt-4" onClick={() => setIsSidebarOpen(false)}>
               Proceed to Checkout <FiArrowRight />
             </Link>

@@ -1,0 +1,337 @@
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+import { FiArrowDown, FiArrowUp, FiPlus, FiTrash2, FiUpload, FiCheck } from "react-icons/fi";
+import styles from "./CategoriesPanel.module.css";
+import heroStyles from "./HeroSettingsEditor.module.css";
+
+export default function HeroSettingsEditor({ onSavingChange }) {
+  const [settings, setSettings] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
+  const [saving, setSaving] = useState(false);
+  const fileInputRef = useRef(null);
+
+  const load = async () => {
+    setError("");
+    try {
+      const response = await fetch("/api/store-settings/hero", { cache: "no-store" });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Unable to load hero banner settings.");
+      setSettings(data);
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  useEffect(() => {
+    load();
+  }, []);
+
+  useEffect(() => {
+    onSavingChange(saving || uploading);
+  }, [saving, uploading, onSavingChange]);
+
+  const handleUploadImage = async (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+
+    setError("");
+    setNotice("");
+
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+      setError("Please select a valid image file (JPG, PNG, or WebP).");
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      setError("Selected image must be under 10 MB.");
+      return;
+    }
+
+    if ((settings.heroImages || []).length >= 5) {
+      setError("You can upload a maximum of 5 images for the hero banner.");
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.url) {
+        throw new Error(data.error || "Failed to upload image to Cloudflare R2.");
+      }
+
+      setSettings((current) => ({
+        ...current,
+        heroImages: [...(current.heroImages || []), data.url].slice(0, 5),
+      }));
+      setNotice("Image uploaded to Cloudflare R2 successfully.");
+    } catch (err) {
+      setError(err.message || "Failed to upload image.");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const moveImage = (index, direction) => {
+    setSettings((current) => {
+      const list = [...(current.heroImages || [])];
+      const targetIndex = index + direction;
+      if (targetIndex < 0 || targetIndex >= list.length) return current;
+      [list[index], list[targetIndex]] = [list[targetIndex], list[index]];
+      return { ...current, heroImages: list };
+    });
+  };
+
+  const removeImage = (index) => {
+    setSettings((current) => ({
+      ...current,
+      heroImages: (current.heroImages || []).filter((_, i) => i !== index),
+    }));
+  };
+
+  const save = async (event) => {
+    event.preventDefault();
+    setSaving(true);
+    setError("");
+    setNotice("");
+
+    try {
+      const response = await fetch("/api/store-settings/hero", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(settings),
+      });
+
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Unable to save hero banner settings.");
+
+      setSettings(data);
+      setNotice("Hero banner settings saved successfully.");
+
+      if (typeof BroadcastChannel !== "undefined") {
+        const channel = new BroadcastChannel("store-settings");
+        channel.postMessage("hero-updated");
+        channel.close();
+      }
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (!settings) {
+    return (
+      <div className={styles.empty}>
+        {error ? (
+          <>
+            <p role="alert">{error}</p>
+            <button className={styles.secondary} onClick={load}>
+              Try again
+            </button>
+          </>
+        ) : (
+          <p role="status">Loading hero banner settings…</p>
+        )}
+      </div>
+    );
+  }
+
+  const heroImages = settings.heroImages || [];
+
+  return (
+    <div className={styles.workspace}>
+      <p className={styles.hint}>
+        Configure your store's announcement bar, dynamic hero banner images (hosted on Cloudflare R2), and homepage tickers.
+      </p>
+
+      <form className={styles.editor} onSubmit={save} aria-label="Hero banner settings">
+        <fieldset className={styles.fields} disabled={saving || uploading}>
+          {/* Announcement Bar Settings */}
+          <h3 className={styles.fieldHeading} style={{ marginTop: 0, paddingTop: 0, borderTop: 0 }}>
+            Announcement Bar
+          </h3>
+          <div className={styles.visibility}>
+            <div>
+              <label htmlFor="announcement-enabled">Show announcement bar</label>
+              <p>Show or hide the announcement bar at the very top of the store.</p>
+            </div>
+            <button
+              type="button"
+              id="announcement-enabled"
+              role="switch"
+              aria-label="Show announcement bar"
+              aria-checked={settings.announcementVisible}
+              className={styles.switch}
+              onClick={() =>
+                setSettings({ ...settings, announcementVisible: !settings.announcementVisible })
+              }
+            >
+              <span />
+            </button>
+          </div>
+
+          <label className={styles.label} htmlFor="announcement-text" style={{ marginTop: 18 }}>
+            Announcement text (optional)
+          </label>
+          <input
+            id="announcement-text"
+            className={styles.nameInput}
+            value={settings.announcementText || ""}
+            maxLength={500}
+            placeholder="e.g. Free Delivery on orders ₹3,999 and above (leave blank for automatic text)"
+            onChange={(event) =>
+              setSettings({ ...settings, announcementText: event.target.value })
+            }
+          />
+          <p className={styles.hint} style={{ marginTop: -16, marginBottom: 24 }}>
+            Leave blank to automatically display the free delivery announcement based on your delivery settings.
+          </p>
+
+          {/* Hero Banner Images */}
+          <h3 className={styles.fieldHeading}>Hero Banner Images</h3>
+          <p className={styles.hint}>
+            Upload up to 5 images for the hero section. Images are uploaded to Cloudflare R2 and will only be displayed as a rotating carousel in the hero section.
+          </p>
+
+          {heroImages.length > 0 && (
+            <div className={heroStyles.imageList} role="list" aria-label="Hero banner images">
+              {heroImages.map((url, index) => (
+                <div key={url + index} className={heroStyles.imageCard} role="listitem">
+                  <div className={heroStyles.imageThumb}>
+                    <img src={url} alt={`Hero banner ${index + 1}`} />
+                  </div>
+                  <div className={heroStyles.imageInfo}>
+                    <strong>Image {index + 1} of {heroImages.length}</strong>
+                    <span>{url}</span>
+                  </div>
+                  <div className={heroStyles.imageActions}>
+                    <button
+                      type="button"
+                      className={styles.iconButton}
+                      aria-label={`Move image ${index + 1} up`}
+                      disabled={index === 0}
+                      onClick={() => moveImage(index, -1)}
+                    >
+                      <FiArrowUp />
+                    </button>
+                    <button
+                      type="button"
+                      className={styles.iconButton}
+                      aria-label={`Move image ${index + 1} down`}
+                      disabled={index === heroImages.length - 1}
+                      onClick={() => moveImage(index, 1)}
+                    >
+                      <FiArrowDown />
+                    </button>
+                    <button
+                      type="button"
+                      className={styles.iconButton}
+                      aria-label={`Remove image ${index + 1}`}
+                      onClick={() => removeImage(index)}
+                    >
+                      <FiTrash2 />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {heroImages.length === 0 && (
+            <p className={styles.hint} style={{ margin: "16px 0" }}>
+              No hero images added yet. Click &quot;Upload image&quot; below to add your first banner image.
+            </p>
+          )}
+
+          <input
+            ref={fileInputRef}
+            className={styles.fileInput}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            disabled={uploading || saving || heroImages.length >= 5}
+            onChange={handleUploadImage}
+          />
+          <button
+            type="button"
+            className={styles.secondary}
+            disabled={uploading || saving || heroImages.length >= 5}
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <FiUpload aria-hidden="true" />
+            {uploading ? "Uploading to Cloudflare R2…" : heroImages.length >= 5 ? "Max 5 images reached" : "Upload image"}
+          </button>
+
+          {/* Below Ticker Text */}
+          <h3 className={styles.fieldHeading}>Below Ticker Text</h3>
+          <p className={styles.hint}>
+            The scrolling marquee notice displayed right underneath the hero banner.
+          </p>
+          <label className={styles.label} htmlFor="below-ticker-text">
+            Below ticker notice
+          </label>
+          <textarea
+            id="below-ticker-text"
+            className={styles.nameInput}
+            rows={2}
+            maxLength={1000}
+            required
+            value={settings.belowTickerText || ""}
+            onChange={(event) =>
+              setSettings({ ...settings, belowTickerText: event.target.value })
+            }
+          />
+
+          {/* End Ticker Text */}
+          <h3 className={styles.fieldHeading}>End Ticker Text</h3>
+          <p className={styles.hint}>
+            The scrolling packing and order preparation notice displayed near the bottom of the page.
+          </p>
+          <label className={styles.label} htmlFor="end-ticker-text">
+            End ticker notice
+          </label>
+          <textarea
+            id="end-ticker-text"
+            className={styles.nameInput}
+            rows={2}
+            maxLength={1000}
+            required
+            value={settings.endTickerText || ""}
+            onChange={(event) =>
+              setSettings({ ...settings, endTickerText: event.target.value })
+            }
+          />
+
+          {error && (
+            <p className={styles.error} role="alert">
+              {error}
+            </p>
+          )}
+          {notice && (
+            <p className={styles.success} role="status">
+              <FiCheck aria-hidden="true" />
+              {notice}
+            </p>
+          )}
+
+          <div className={styles.actions}>
+            <button type="submit" className={styles.primary} disabled={saving || uploading}>
+              {saving ? "Saving…" : "Save settings"}
+            </button>
+          </div>
+        </fieldset>
+      </form>
+    </div>
+  );
+}

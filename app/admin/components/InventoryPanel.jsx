@@ -6,7 +6,7 @@ import { FiBox, FiCheck, FiEdit2, FiImage, FiPlus, FiTrash2, FiUpload, FiX } fro
 import { useCategories } from "../../hooks/useCategories";
 import styles from "./CategoriesPanel.module.css";
 
-const blank = { title: "", categoryId: "", price: "", oldPrice: "", description: "", image: "", inStock: true, plantCare: "", deliveryReturns: "", deliveryNote: "", deliveryPincodes: "", replacementInfo: "", deliveryInfo: "", supportInfo: "", packagingInfo: "", soldLast24Hours: "", demoMetrics: true };
+const blank = { title: "", categoryId: "", price: "", oldPrice: "", description: "", image: "", image2: "", inStock: true, plantCare: "", deliveryReturns: "", deliveryNote: "", deliveryPincodes: "", replacementInfo: "", deliveryInfo: "", supportInfo: "", packagingInfo: "", soldLast24Hours: "", demoMetrics: true };
 
 export default function InventoryPanel() {
   const categories = useCategories();
@@ -19,6 +19,7 @@ export default function InventoryPanel() {
   const [saving, setSaving] = useState(false);
   const [processing, setProcessing] = useState(false);
   const fileRef = useRef(null);
+  const fileRef2 = useRef(null);
   const nameRef = useRef(null);
   const imageVersion = useRef(0);
 
@@ -38,13 +39,13 @@ export default function InventoryPanel() {
 
   const openForm = product => {
     imageVersion.current++;
-    setForm(product ? { ...blank, ...product, oldPrice: product.oldPrice || "", image: product.image || "", description: product.description || "", categoryId: product.categoryId || "", ...Object.fromEntries(["plantCare", "deliveryReturns", "deliveryNote", "deliveryPincodes", "replacementInfo", "deliveryInfo", "supportInfo", "packagingInfo", "soldLast24Hours"].map(key => [key, product[key] ?? ""])) } : { ...blank });
+    setForm(product ? { ...blank, ...product, oldPrice: product.oldPrice || "", image: product.image || "", image2: product.image2 || "", description: product.description || "", categoryId: product.categoryId || "", ...Object.fromEntries(["plantCare", "deliveryReturns", "deliveryNote", "deliveryPincodes", "replacementInfo", "deliveryInfo", "supportInfo", "packagingInfo", "soldLast24Hours"].map(key => [key, product[key] ?? ""])) } : { ...blank });
     setError(""); setNotice(""); setProcessing(false);
   };
   const close = () => { imageVersion.current++; setForm(null); setProcessing(false); setError(""); };
   const change = (key, value) => setForm(current => ({ ...current, [key]: value }));
 
-  const upload = async event => {
+  const upload = async (event, field = 'image') => {
     const file = event.target.files?.[0];
     event.target.value = "";
     if (!file) return;
@@ -57,7 +58,7 @@ export default function InventoryPanel() {
     try {
       const compressed = await imageCompression(file, { maxSizeMB: 0.6, maxWidthOrHeight: 1200, useWebWorker: true });
       const image = await imageCompression.getDataUrlFromFile(compressed);
-      if (version === imageVersion.current) setForm(current => current ? { ...current, image } : null);
+      if (version === imageVersion.current) setForm(current => current ? { ...current, [field]: image } : null);
     } catch { if (version === imageVersion.current) setError("Unable to read this image. Choose another image."); }
     finally { if (version === imageVersion.current) setProcessing(false); }
   };
@@ -115,8 +116,18 @@ export default function InventoryPanel() {
             <div><label className={styles.label} htmlFor="product-price">Selling price (₹)</label><input className={styles.nameInput} id="product-price" type="number" min="0" max="10000000" step="0.01" required value={form.price} onChange={event => change("price", event.target.value)} placeholder="0.00" /></div>
             <div><label className={styles.label} htmlFor="product-old-price">Original price (₹, optional)</label><input className={styles.nameInput} id="product-old-price" type="number" min="0" max="10000000" step="0.01" value={form.oldPrice} onChange={event => change("oldPrice", event.target.value)} placeholder="Before discount" /></div>
           </div>
-          <span className={styles.label}>Product image</span>
-          <div className={styles.imagePicker}><div className={styles.preview}>{form.image ? <img src={form.image} alt="Product image preview" /> : <FiImage aria-hidden="true" />}</div><div><input ref={fileRef} className={styles.fileInput} type="file" accept="image/jpeg,image/png,image/webp" aria-label="Upload product image" disabled={processing} onChange={upload} /><button type="button" className={styles.secondary} disabled={processing} onClick={() => fileRef.current?.click()}><FiUpload aria-hidden="true" />{processing ? "Preparing image…" : form.image ? "Change image" : "Upload image"}</button><p className={styles.hint}>JPG, PNG or WebP, up to 10 MB.</p>{form.image && <button type="button" className={styles.textButton} disabled={processing} onClick={() => change("image", "")}>Remove image</button>}</div></div>
+          <span className={styles.label}>Product images (up to 2)</span>
+          <div className={styles.formColumns}>
+            <div>
+              <span className={styles.label} style={{ fontSize: 11, color: '#68786e', marginBottom: 6 }}>Primary image</span>
+              <div className={styles.imagePicker}><div className={styles.preview}>{form.image ? <img src={form.image} alt="Product image preview" /> : <FiImage aria-hidden="true" />}</div><div><input ref={fileRef} className={styles.fileInput} type="file" accept="image/jpeg,image/png,image/webp" aria-label="Upload product image" disabled={processing} onChange={e => upload(e, 'image')} /><button type="button" className={styles.secondary} disabled={processing} onClick={() => fileRef.current?.click()}><FiUpload aria-hidden="true" />{processing ? "Preparing…" : form.image ? "Change image" : "Upload image"}</button>{form.image && <button type="button" className={styles.textButton} disabled={processing} onClick={() => change("image", "")}>Remove image</button>}</div></div>
+            </div>
+            <div>
+              <span className={styles.label} style={{ fontSize: 11, color: '#68786e', marginBottom: 6 }}>Second image (optional, carousel)</span>
+              <div className={styles.imagePicker}><div className={styles.preview}>{form.image2 ? <img src={form.image2} alt="Second image preview" /> : <FiImage aria-hidden="true" />}</div><div><input ref={fileRef2} className={styles.fileInput} type="file" accept="image/jpeg,image/png,image/webp" aria-label="Upload second product image" disabled={processing} onChange={e => upload(e, 'image2')} /><button type="button" className={styles.secondary} disabled={processing} onClick={() => fileRef2.current?.click()}><FiUpload aria-hidden="true" />{processing ? "Preparing…" : form.image2 ? "Change image" : "Upload image"}</button>{form.image2 && <button type="button" className={styles.textButton} disabled={processing} onClick={() => change("image2", "")}>Remove image</button>}</div></div>
+            </div>
+          </div>
+          <p className={styles.hint} style={{ marginTop: -14, marginBottom: 20 }}>JPG, PNG or WebP, up to 10 MB per image. Both images will show as an interactive carousel on the product details page.</p>
           <label className={styles.label} htmlFor="product-description">Description (optional)</label>
           <textarea className={styles.nameInput} id="product-description" rows={4} maxLength={10000} value={form.description} onChange={event => change("description", event.target.value)} placeholder="Tell customers about this plant" />
           <h3 className={styles.fieldHeading}>Product information</h3>

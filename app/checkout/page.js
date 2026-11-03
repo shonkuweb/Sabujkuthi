@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { FiCreditCard, FiLock, FiShield } from "react-icons/fi";
 import { useCart } from "../context/CartContext";
+import { useStoreSettings } from "../context/StoreSettingsContext";
 import { deliveryPaise, FREE_DELIVERY_THRESHOLD } from "../../lib/shipping.mjs";
 import { checkoutPost, loadRazorpay } from "../../lib/razorpay-checkout";
 import styles from "./page.module.css";
@@ -15,6 +16,7 @@ const money = paise => (paise / 100).toLocaleString('en-IN', { minimumFractionDi
 export default function CheckoutPage() {
   const router = useRouter();
   const { items, productsLoading, productsError, removePurchased } = useCart();
+  const { deliverySettings } = useStoreSettings();
   const [form, setForm] = useState({ name: '', phone: '', email: '', pincode: '', address: '' });
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
@@ -22,7 +24,7 @@ export default function CheckoutPage() {
   const [testMode, setTestMode] = useState(false);
   const attempt = useRef(null);
   const subtotal = items.reduce((sum, item) => sum + Math.round(Number(item.price) * 100) * item.qty, 0);
-  const shipping = deliveryPaise(subtotal);
+  const shipping = deliveryPaise(subtotal, deliverySettings);
   const total = subtotal + shipping;
 
   const finish = useCallback((order, token) => {
@@ -123,7 +125,7 @@ export default function CheckoutPage() {
           <section className={styles.card}><h2><span>2</span>Order summary</h2>
             {!items.length ? <p className={styles.empty}>Your cart is empty. <Link href="/">Browse plants</Link></p> : items.map(item => <div className={styles.line} key={JSON.stringify([item.slug, item.variant])}>{item.image && <img src={item.image} alt="" />}<div><strong>{item.title}</strong><span>{item.variant ? `${item.variant} · ` : ''}Qty: {item.qty}</span></div><strong>₹{money(Math.round(Number(item.price) * 100) * item.qty)}</strong></div>)}
             <div className={styles.totals}><p><span>Items</span><strong>₹{money(subtotal)}</strong></p><p><span>Delivery</span><strong>{shipping === 0 ? 'FREE' : `₹${money(shipping)}`}</strong></p><p className={styles.total}><span>Total payable</span><strong>₹{money(total)}</strong></p></div>
-            <p className={styles.hint}>Free delivery on orders ₹{FREE_DELIVERY_THRESHOLD.toLocaleString('en-IN')} and above. Prices are checked again before payment.</p>
+            <p className={styles.hint}>Free delivery on orders ₹{(deliverySettings?.freeDeliveryThreshold ?? FREE_DELIVERY_THRESHOLD).toLocaleString('en-IN')} and above. Prices are checked again before payment.</p>
           </section>
           <button className={styles.pay} type="submit" disabled={!items.length || busy}><FiCreditCard aria-hidden="true" />{busy ? 'Processing…' : `Pay ₹${money(total)} with Razorpay`}</button>
         </fieldset>

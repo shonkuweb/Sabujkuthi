@@ -41,6 +41,7 @@ async function save(request, update) {
   if (data.isPublished != null && typeof data.isPublished !== 'boolean') return NextResponse.json({ error: 'Invalid publication status.' }, { status: 400 });
   if (data.description != null && (typeof data.description !== 'string' || data.description.length > 10000)) return NextResponse.json({ error: 'Description must be under 10,000 characters.' }, { status: 400 });
   if (data.image != null && (typeof data.image !== 'string' || data.image.length > 1400000 || (data.image && !/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/]+={0,2}$/.test(data.image) && !/^https?:\/\/[^\s]+$/.test(data.image)))) return NextResponse.json({ error: 'Choose a valid JPG, PNG or WebP image.' }, { status: 400 });
+  if (data.image2 != null && (typeof data.image2 !== 'string' || data.image2.length > 1400000 || (data.image2 && !/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/]+={0,2}$/.test(data.image2) && !/^https?:\/\/[^\s]+$/.test(data.image2)))) return NextResponse.json({ error: 'Choose a valid JPG, PNG or WebP secondary image.' }, { status: 400 });
   const detailFields = ['plantCare', 'deliveryReturns', 'deliveryNote', 'deliveryPincodes', 'replacementInfo', 'deliveryInfo', 'supportInfo', 'packagingInfo'];
   for (const key of detailFields) {
     if (data[key] != null && (typeof data[key] !== 'string' || data[key].length > 10000)) return NextResponse.json({ error: 'Product detail fields must be text under 10,000 characters.' }, { status: 400 });
@@ -63,10 +64,18 @@ async function save(request, update) {
         console.warn('R2 upload failed, preserving provided image:', err);
       }
     }
+    let imageUrl2 = data.image2 || null;
+    if (imageUrl2 && imageUrl2.startsWith('data:image/')) {
+      try {
+        imageUrl2 = await uploadDataUrlToR2(imageUrl2, 'SabujKuthi/products', `${baseSlug}-2`);
+      } catch (err) {
+        console.warn('R2 upload failed for image2, preserving provided image:', err);
+      }
+    }
     const fields = {
       title, categoryId: data.categoryId, price: String(Number(data.price)),
       oldPrice: data.oldPrice ? String(Number(data.oldPrice)) : null,
-      description: data.description?.trim() || null, image: imageUrl,
+      description: data.description?.trim() || null, image: imageUrl, image2: imageUrl2,
       inStock: data.inStock !== false, isPublished: data.isPublished !== false,
     };
     for (const key of detailFields) {

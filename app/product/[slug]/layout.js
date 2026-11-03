@@ -19,6 +19,7 @@ export async function generateMetadata({ params }) {
     const title = `${product.title} | ${business.name}`;
     const description = product.description ? product.description.slice(0, 160) : `View ${product.title} at ${business.name}.`;
 
+    const ogImages = [product.image, product.image2].filter(Boolean).map(url => ({ url, alt: `${business.name} - ${product.title}` }));
     return {
       title: { absolute: title },
       description,
@@ -39,14 +40,14 @@ export async function generateMetadata({ params }) {
         description,
         url: `${siteUrl}/product/${slug}`,
         siteName: business.name,
-        images: product.image ? [{ url: product.image, alt: `${business.name} - ${product.title}` }] : [],
+        images: ogImages,
         type: "article"
       },
       twitter: {
         card: "summary_large_image",
         title,
         description,
-        images: product.image ? [product.image] : []
+        images: ogImages.map(img => img.url)
       }
     };
   } catch (error) {
@@ -71,7 +72,7 @@ export default async function ProductLayout({ children, params }) {
         "@context": "https://schema.org/",
         "@type": "Product",
         "name": product.title,
-        "image": product.image ? [product.image] : [],
+        "image": [product.image, product.image2].filter(Boolean),
         ...(product.description ? { description: product.description } : {}),
         "sku": product.id,
         "brand": {

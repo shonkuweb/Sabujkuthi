@@ -13,12 +13,16 @@ export default function CategoryCatalog({ categories, products, loading, error, 
   if (error) return <div id="shop" className={styles.message} role="alert">Unable to load products. Please refresh to try again.</div>;
   if (categorySlug && !current) return <section id="shop" className={styles.message}><h1>Category unavailable</h1><Link href="/">Back to store</Link></section>;
   const matchingProducts = products.filter(product => product.title.toLowerCase().includes(searchQuery.toLowerCase().trim()));
-  const sections = current ? [current] : visible;
+  const gridCategories = visible.filter(category => category.isVisibleInGrid !== false);
+  const sections = current ? [current] : gridCategories;
+  const shopCategories = visible.filter(category => category.isVisibleInShopBy !== false);
+  const showShopByCategory = !current && !searchQuery && shopCategories.length > 0;
   return (
     <div id="shop" className={styles.catalog}>
       {current && <nav className={styles.breadcrumbs} aria-label="Breadcrumb"><Link href="/">Home</Link><span>/</span><span>{current.name}</span></nav>}
-      {!sections.length && <p className={styles.message}>No products available yet.</p>}
+      {!sections.length && !showShopByCategory && <p className={styles.message}>No products available yet.</p>}
       {searchQuery && !matchingProducts.length && <p className={styles.message}>No plants match your search.</p>}
+      {sections.length === 0 && showShopByCategory && <ShopByCategory categories={shopCategories} products={products} />}
       {sections.map((category, index) => {
         const all = matchingProducts.filter(product => product.categoryId === category.id);
         if (searchQuery && !all.length) return null;
@@ -31,7 +35,7 @@ export default function CategoryCatalog({ categories, products, loading, error, 
           {current && <p className={styles.count}>{all.length} {all.length === 1 ? "product" : "products"}</p>}
           {items.length ? <div className={styles.grid}>{items.map(product => <ProductCard key={product.id} product={product} />)}</div> : <p className={styles.empty}>No products in this category yet.</p>}
         </section>
-        {!current && !searchQuery && index === Math.min(1, sections.length - 1) && <ShopByCategory categories={visible} products={products} />}
+        {showShopByCategory && index === Math.min(1, sections.length - 1) && <ShopByCategory categories={shopCategories} products={products} />}
         </Fragment>;
       })}
     </div>

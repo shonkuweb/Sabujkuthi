@@ -4,7 +4,7 @@ import Link from "next/link";
 import { whatsappUrl } from "../../../lib/business.mjs";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { FiChevronDown, FiHeart, FiImage, FiMapPin, FiMessageCircle, FiMinus, FiPackage, FiPlus, FiRefreshCw, FiTruck } from "react-icons/fi";
+import { FiChevronDown, FiChevronLeft, FiChevronRight, FiHeart, FiImage, FiMapPin, FiMessageCircle, FiMinus, FiPackage, FiPlus, FiRefreshCw, FiTruck } from "react-icons/fi";
 import { FaFacebookF, FaFire, FaStar, FaRegStar, FaTwitter } from "react-icons/fa";
 import { useCategories } from "../../hooks/useCategories";
 import { useCart } from "../../context/CartContext";
@@ -26,11 +26,14 @@ export default function ProductPage() {
   const [pincode, setPincode] = useState('');
   const [deliveryMessage, setDeliveryMessage] = useState('');
   const [purchaseError, setPurchaseError] = useState('');
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [touchStartX, setTouchStartX] = useState(null);
   const { addItem, products, productsLoading, productsError, showCartAfterAdd } = useCart();
   const product = products.find(item => item.slug === slug);
 
   useEffect(() => {
     setQty(1); setVariantQtys({}); setPincode(''); setDeliveryMessage(''); setPurchaseError('');
+    setActiveImageIndex(0);
     setShareUrl(window.location.href);
     try { setFavorite(JSON.parse(localStorage.getItem('nursery-wishlist') || '[]').includes(slug)); }
     catch { setFavorite(false); }
@@ -46,6 +49,24 @@ export default function ProductPage() {
   const related = products.filter(item => item.categoryId === product.categoryId && item.id !== product.id).slice(0, 4);
   const rating = product.demoMetrics ? 4.4 : Number(product.rating);
   const reviewCount = product.demoMetrics ? 110 : product.reviews;
+  const images = [product.image, product.image2].filter(Boolean);
+
+  const handleTouchStart = e => {
+    setTouchStartX(e.touches[0].clientX);
+  };
+
+  const handleTouchEnd = e => {
+    if (touchStartX === null) return;
+    const diff = touchStartX - e.changedTouches[0].clientX;
+    if (Math.abs(diff) > 40 && images.length > 1) {
+      if (diff > 0) {
+        setActiveImageIndex(current => (current + 1) % images.length);
+      } else {
+        setActiveImageIndex(current => (current - 1 + images.length) % images.length);
+      }
+    }
+    setTouchStartX(null);
+  };
   const highlights = [
     [product.replacementInfo, FiRefreshCw], [product.deliveryInfo, FiTruck],
     [product.supportInfo, FiMessageCircle], [product.packagingInfo, FiPackage],
@@ -88,7 +109,52 @@ export default function ProductPage() {
     <main className={styles.page}>
       <nav className={styles.breadcrumbs} aria-label="Breadcrumb"><Link href="/">Home</Link><span>/</span>{category && <><Link href={`/category/${category.slug}`}>{category.name}</Link><span>/</span></>}<span>{product.title}</span></nav>
       <div className={styles.layout}>
-        <div className={styles.productImage}>{product.image ? <img src={product.image} alt={product.title} /> : <span><FiImage aria-hidden="true" />No product image</span>}</div>
+        {images.length > 1 ? (
+          <div
+            className={styles.carouselContainer}
+            role="region"
+            aria-label={`${product.title} image gallery`}
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
+          >
+            <div className={styles.productImage}>
+              <img src={images[activeImageIndex]} alt={`${product.title} - photo ${activeImageIndex + 1}`} />
+            </div>
+            <button
+              type="button"
+              className={`${styles.carouselBtn} ${styles.prevBtn}`}
+              aria-label="Previous image"
+              onClick={() => setActiveImageIndex(current => (current - 1 + images.length) % images.length)}
+            >
+              <FiChevronLeft aria-hidden="true" />
+            </button>
+            <button
+              type="button"
+              className={`${styles.carouselBtn} ${styles.nextBtn}`}
+              aria-label="Next image"
+              onClick={() => setActiveImageIndex(current => (current + 1) % images.length)}
+            >
+              <FiChevronRight aria-hidden="true" />
+            </button>
+            <div className={styles.carouselDots} role="tablist" aria-label="Image selection">
+              {images.map((_, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  role="tab"
+                  aria-selected={idx === activeImageIndex}
+                  aria-label={`Show image ${idx + 1}`}
+                  className={`${styles.carouselDot} ${idx === activeImageIndex ? styles.carouselDotActive : ''}`}
+                  onClick={() => setActiveImageIndex(idx)}
+                />
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div className={styles.productImage}>
+            {product.image ? <img src={product.image} alt={product.title} /> : <span><FiImage aria-hidden="true" />No product image</span>}
+          </div>
+        )}
         <section className={styles.details} aria-labelledby="product-title">
           <div className={styles.titleRow}><h1 id="product-title">{product.title}</h1><button type="button" className={`${styles.favorite} ${favorite ? styles.saved : ''}`} aria-label={favorite ? 'Remove from wishlist' : 'Save to wishlist'} aria-pressed={favorite} onClick={toggleFavorite}><FiHeart /></button></div>
           {product.soldLast24Hours > 0 && <p className={styles.sold}><FaFire aria-hidden="true" />{product.soldLast24Hours} sold in the last 24 hours</p>}

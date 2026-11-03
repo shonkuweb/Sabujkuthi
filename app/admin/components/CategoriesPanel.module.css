@@ -44,6 +44,7 @@
 .cardImage { display: grid; place-items: center; width: 62px; height: 62px; flex-shrink: 0; border-radius: 10px; overflow: hidden; background: #f0f6f2; color: #90a497; font-size: 23px; }
 .cardDetails { flex: 1; min-width: 0; }
 .cardDetails h2 { margin: 0 0 9px; font-size: 14px; font-weight: 600; overflow-wrap: anywhere; }
+.badges { display: flex; flex-wrap: wrap; gap: 4px; }
 .visible, .hidden { display: inline-flex; padding: 4px 8px; border-radius: 5px; font-size: 10px; line-height: 1.4; }
 .visible { background: #edf6f0; color: #40835a; }
 .hidden { background: #f1f2f1; color: #7e8580; }

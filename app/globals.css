@@ -232,7 +232,6 @@ body {
   width: 100%;
   height: auto;
   aspect-ratio: 709 / 533;
-  background: url("https://pub-ce8688bc6c654bcfb99716f7c9373bcd.r2.dev/SabujKuthi/assets/hero-banner.png") center/cover no-repeat;
   display: flex;
   align-items: flex-end;
 }

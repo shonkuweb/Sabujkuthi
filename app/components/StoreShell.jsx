@@ -19,7 +19,9 @@ export function useStoreSearch() { return useContext(StoreSearchContext); }
 export default function StoreShell({ children }) {
   const pathname = usePathname();
   const router = useRouter();
-  const categories = useCategories().filter(category => category.isVisible !== false);
+  const allCategories = useCategories();
+  const categories = allCategories.filter(category => category.isVisible !== false);
+  const navCategories = categories.filter(category => category.isVisibleInNav !== false);
   const { setIsSidebarOpen } = useCart();
   const [searchQuery, setSearchQuery] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
@@ -62,8 +64,8 @@ export default function StoreShell({ children }) {
         <form className="search-wrap" onSubmit={search} role="search">
           <div className="search-box"><FiSearch className="search-icon" /><input type="search" placeholder="Search plants, pots..." aria-label="Search" value={searchQuery} onChange={event => setSearchQuery(event.target.value)} /></div>
         </form>
-        {isHome && categories.length > 0 && <section id="categories" className="category-row" aria-label="Plant categories">
-          {categories.map((category, index) => <Link key={category.id} href={`/category/${category.slug}`} className="category-modern" onClick={() => setSearchQuery('')}>
+        {isHome && navCategories.length > 0 && <section id="categories" className="category-row" aria-label="Plant categories">
+          {navCategories.map((category, index) => <Link key={category.id} href={`/category/${category.slug}`} className="category-modern" onClick={() => setSearchQuery('')}>
             <div className={`category-icon-modern tone-${index % 2 === 0 ? 'a' : 'b'}`}>{category.image ? <img src={category.image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 'inherit' }} /> : <FaLeaf />}</div>
             <span className="category-name">{category.name}</span>
           </Link>)}
@@ -81,7 +83,7 @@ export default function StoreShell({ children }) {
             <Link href="/contact" onClick={closeMenu}>Contact Us<FiChevronRight /></Link>
           </nav>
           <div className="menu-categories"><p>Categories</p><div className="menu-category-grid">
-            {categories.map(category => <Link key={category.id} href={`/category/${category.slug}`} className="menu-category-item" onClick={() => { closeMenu(); setSearchQuery(''); }}>{category.name}</Link>)}
+            {navCategories.map(category => <Link key={category.id} href={`/category/${category.slug}`} className="menu-category-item" onClick={() => { closeMenu(); setSearchQuery(''); }}>{category.name}</Link>)}
           </div></div>
         </aside>
         <FloatingCart hidden={menuOpen} />
