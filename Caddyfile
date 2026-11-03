@@ -1,5 +1,7 @@
-mitalinursury.com, www.mitalinursury.com, malatinursury.shonkuweb.com {
-    reverse_proxy web:3000
-}
+# Optional Caddy reverse proxy configuration
+# Replace yourdomain.com with your actual domain or use your existing VPS reverse proxy (Nginx / Caddy / Traefik)
+# pointing to localhost:3005 (or whatever APP_PORT you set in .env).
 
-
+# yourdomain.com, www.yourdomain.com {
+#     reverse_proxy 127.0.0.1:3005
+# }

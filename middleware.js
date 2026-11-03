@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
+import { verifyAdminSession } from './lib/admin-session.mjs';
 
-export function middleware(request) {
+export async function middleware(request) {
   const { pathname } = request.nextUrl;
   
   // Exclude login page from protection
@@ -12,7 +13,7 @@ export function middleware(request) {
   if (pathname.startsWith('/admin')) {
     const token = request.cookies.get('admin_token');
     
-    if (!token) {
+    if (!await verifyAdminSession(token?.value)) {
       return NextResponse.redirect(new URL('/admin/login', request.url));
     }
   }

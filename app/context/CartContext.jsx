@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useState, useCallback } from "react";
 
 const CartContext = createContext(null);
 
@@ -8,25 +8,39 @@ export function CartProvider({ children }) {
   const [items, setItems] = useState([]);
   const [products, setProducts] = useState([]);
   const [productsLoading, setProductsLoading] = useState(true);
+  const [productsError, setProductsError] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   useEffect(() => {
-    fetch("/api/products")
-      .then(res => res.json())
-      .then(data => {
-        if (Array.isArray(data)) {
-          setProducts(data);
-        } else {
-          console.error("Expected array of products, got:", data);
-          setProducts([]);
-        }
-        setProductsLoading(false);
-      })
-      .catch(err => {
-        console.error("Failed to fetch products:", err);
-        setProductsLoading(false);
-      });
+    let active = true;
+    let controller;
+    const refresh = async () => {
+      controller?.abort();
+      const requestController = new AbortController();
+      controller = requestController;
+      try {
+        const response = await fetch("/api/products", { cache: "no-store", signal: requestController.signal });
+        const data = await response.json();
+        if (!response.ok || !Array.isArray(data)) throw new Error("Unable to load products");
+        if (active) { setProducts(data); setProductsError(false); }
+      } catch (error) {
+        if (active && error.name !== "AbortError") setProductsError(true);
+      } finally {
+        if (active && !requestController.signal.aborted) setProductsLoading(false);
+      }
+    };
+    const onVisible = () => { if (document.visibilityState === "visible") refresh(); };
+    refresh();
+    window.addEventListener("focus", refresh);
+    document.addEventListener("visibilitychange", onVisible);
+    const channels = typeof BroadcastChannel !== "undefined" ? ["store-products", "store-categories"].map(name => new BroadcastChannel(name)) : [];
+    channels.forEach(channel => { channel.onmessage = refresh; });
+    return () => {
+      active = false; controller?.abort(); channels.forEach(channel => channel.close());
+      window.removeEventListener("focus", refresh);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
   }, []);
 
   useEffect(() => {
@@ -45,6 +59,8 @@ export function CartProvider({ children }) {
   }, [items]);
 
   const addItem = (slug, qty = 1, variant = null) => {
+    const product = products.find(product => product.slug === slug);
+    if (!product || product.inStock === false || !Number.isInteger(qty) || qty < 1) return;
     setItems((prev) => {
       const found = prev.find((i) => i.slug === slug && i.variant === variant);
       if (found) {
@@ -52,6 +68,10 @@ export function CartProvider({ children }) {
       }
       return [...prev, { slug, qty, variant }];
     });
+  };
+
+  const showCartAfterAdd = () => {
+    if (window.matchMedia('(min-width: 768px)').matches) setIsSidebarOpen(true);
   };
 
   const updateQty = (slug, variant, qty) => {
@@ -65,12 +85,23 @@ export function CartProvider({ children }) {
   const removeItem = (slug, variant) => setItems((prev) => prev.filter((i) => !(i.slug === slug && i.variant === variant)));
   const clear = () => setItems([]);
 
+  const removePurchased = useCallback((orderId, purchased) => {
+    let processed = [];
+    try { processed = JSON.parse(localStorage.getItem('nursery-confirmed-cart-orders') || '[]'); } catch {}
+    if (processed.includes(orderId)) return;
+    setItems(current => current.map(item => {
+      const paid = purchased.find(line => line.slug === item.slug && (line.variant || null) === (item.variant || null));
+      return paid ? { ...item, qty: Math.max(0, item.qty - paid.qty) } : item;
+    }).filter(item => item.qty > 0));
+    try { localStorage.setItem('nursery-confirmed-cart-orders', JSON.stringify([...processed, orderId].slice(-100))); } catch {}
+  }, []);
+
   const detailedItems = useMemo(
     () =>
       items
         .map((item) => {
           const product = products.find((p) => p.slug === item.slug);
-          if (!product) return null;
+          if (!product || product.inStock === false) return null;
           let price = product.price;
           if (item.variant && product.adeniumOptions && product.adeniumOptions[item.variant]) {
             price = product.adeniumOptions[item.variant];
@@ -82,7 +113,7 @@ export function CartProvider({ children }) {
   );
 
   return (
-    <CartContext.Provider value={{ items: detailedItems, addItem, updateQty, removeItem, clear, products, productsLoading, isSidebarOpen, setIsSidebarOpen, isMenuOpen, setIsMenuOpen }}>
+    <CartContext.Provider value={{ items: detailedItems, addItem, showCartAfterAdd, updateQty, removeItem, clear, removePurchased, products, productsLoading, productsError, isSidebarOpen, setIsSidebarOpen, isMenuOpen, setIsMenuOpen }}>
       {children}
     </CartContext.Provider>
   );

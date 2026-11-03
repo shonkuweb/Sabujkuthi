@@ -1,46 +1,45 @@
 import { prisma } from "../../../lib/prisma";
+import { business, siteUrl } from "../../../lib/business.mjs";
 
 export async function generateMetadata({ params }) {
   const { slug } = await params;
 
   try {
-    const product = await prisma.product.findUnique({
-      where: { slug }
+    const product = await prisma.product.findFirst({
+      where: { slug, isPublished: true, category: { is: { isVisible: true } } }
     });
 
     if (!product) {
       return {
-        title: "Product Not Found | Mitali Nursery",
-        description: "Explore 300+ live nursery plants at Mitali Nursery Panskura."
+        title: "Product Not Found",
+        description: `Explore plants at ${business.name}.`
       };
     }
 
-    const title = `Buy ${product.title} Live Plant Online - Wholesale & Retail | Mitali Nursery`;
-    const description = product.description
-      ? `${product.description.slice(0, 150)}... Buy ${product.title} live nursery plant online at Mitali Nursery Panskura at wholesale & retail price.`
-      : `Buy ${product.title} live plant online at best wholesale and retail prices from Mitali Nursery Panskura. High quality live nursery plant delivery across India.`;
+    const title = `${product.title} | ${business.name}`;
+    const description = product.description ? product.description.slice(0, 160) : `View ${product.title} at ${business.name}.`;
 
     return {
-      title,
+      title: { absolute: title },
       description,
       keywords: [
         product.title,
         `buy ${product.title} online`,
         `${product.title} wholesale nursery`,
         `${product.title} price`,
-        "Mitali Nursery",
+        business.name,
         "nursery plant",
-        "wholesale nursery Panskura"
+        `${business.locality} plant nursery`
       ],
       alternates: {
-        canonical: `https://mitalinursury.com/product/${slug}`
+        canonical: `${siteUrl}/product/${slug}`
       },
       openGraph: {
         title,
         description,
-        url: `https://mitalinursury.com/product/${slug}`,
-        siteName: "Mitali Nursery",
-        images: product.image ? [{ url: product.image, alt: `Mitali Nursery - ${product.title}` }] : [],
+        url: `${siteUrl}/product/${slug}`,
+        siteName: business.name,
+        images: product.image ? [{ url: product.image, alt: `${business.name} - ${product.title}` }] : [],
         type: "article"
       },
       twitter: {
@@ -52,8 +51,8 @@ export async function generateMetadata({ params }) {
     };
   } catch (error) {
     return {
-      title: "Nursery Plant | Mitali Nursery",
-      description: "Buy live nursery plants online at wholesale and retail rates from Mitali Nursery Panskura."
+      title: "Plants",
+      description: `Shop plants from ${business.name}, ${business.address}.`
     };
   }
 }
@@ -63,8 +62,8 @@ export default async function ProductLayout({ children, params }) {
   let productJsonLd = null;
 
   try {
-    const product = await prisma.product.findUnique({
-      where: { slug }
+    const product = await prisma.product.findFirst({
+      where: { slug, isPublished: true, category: { is: { isVisible: true } } }
     });
 
     if (product) {
@@ -73,28 +72,26 @@ export default async function ProductLayout({ children, params }) {
         "@type": "Product",
         "name": product.title,
         "image": product.image ? [product.image] : [],
-        "description": product.description || `Buy ${product.title} live plant from Mitali Nursery.`,
+        ...(product.description ? { description: product.description } : {}),
         "sku": product.id,
         "brand": {
           "@type": "Brand",
-          "name": "Mitali Nursery"
+          "name": business.name
         },
         "offers": {
           "@type": "Offer",
-          "url": `https://mitalinursury.com/product/${product.slug}`,
+          "url": `${siteUrl}/product/${product.slug}`,
           "priceCurrency": "INR",
           "price": product.price,
-          "availability": "https://schema.org/InStock",
+          "availability": product.inStock ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
           "seller": {
             "@type": "Organization",
-            "name": "Mitali Nursery"
+            "name": business.name
           }
         },
-        "aggregateRating": {
-          "@type": "AggregateRating",
-          "ratingValue": product.rating || "5.0",
-          "reviewCount": product.reviews || "120"
-        }
+        ...(!product.demoMetrics && product.rating > 0 && product.reviews > 0 ? {
+          aggregateRating: { "@type": "AggregateRating", ratingValue: product.rating, reviewCount: product.reviews }
+        } : {})
       };
     }
   } catch (e) {
@@ -106,7 +103,7 @@ export default async function ProductLayout({ children, params }) {
       {productJsonLd && (
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(productJsonLd) }}
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(productJsonLd).replace(/</g, '\\u003c') }}
         />
       )}
       {children}

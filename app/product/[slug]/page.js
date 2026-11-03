@@ -1,365 +1,119 @@
 "use client";
 
 import Link from "next/link";
-import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { whatsappUrl } from "../../../lib/business.mjs";
+import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import {
-  FiChevronRight,
-  FiChevronDown,
-  FiGrid,
-  FiHome,
-  FiMenu,
-  FiMinus,
-  FiPackage,
-  FiPhone,
-  FiPlus,
-  FiSearch,
-  FiShield,
-  FiShoppingBag,
-  FiStar,
-  FiTruck,
-  FiUser,
-  FiX
-} from "react-icons/fi";
-import { FaWhatsapp, FaLeaf } from "react-icons/fa";
-import { categories as menuCategories } from "../../data/categories";
+import { FiChevronDown, FiHeart, FiImage, FiMapPin, FiMessageCircle, FiMinus, FiPackage, FiPlus, FiRefreshCw, FiTruck } from "react-icons/fi";
+import { FaFacebookF, FaFire, FaStar, FaRegStar, FaTwitter } from "react-icons/fa";
+import { useCategories } from "../../hooks/useCategories";
 import { useCart } from "../../context/CartContext";
+import ProductCard from "../../components/ProductCard";
+import PaymentMethods from "../../components/PaymentMethods";
+import styles from "./page.module.css";
 
-
-
-
+const money = value => Number(value).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 export default function ProductPage() {
+  const categories = useCategories();
   const params = useParams();
   const slug = Array.isArray(params?.slug) ? params.slug[0] : params?.slug;
   const router = useRouter();
-  const [menuOpen, setMenuOpen] = useState(false);
   const [qty, setQty] = useState(1);
   const [variantQtys, setVariantQtys] = useState({});
-  const searchParams = useSearchParams();
-  const mode = searchParams?.get('mode');
-  const isWholesale = mode === 'wholesale';
-
-  const { addItem, products, productsLoading, setIsSidebarOpen } = useCart();
-  const product = products.find((item) => item.slug === slug);
+  const [favorite, setFavorite] = useState(false);
+  const [shareUrl, setShareUrl] = useState('');
+  const [pincode, setPincode] = useState('');
+  const [deliveryMessage, setDeliveryMessage] = useState('');
+  const [purchaseError, setPurchaseError] = useState('');
+  const { addItem, products, productsLoading, productsError, showCartAfterAdd } = useCart();
+  const product = products.find(item => item.slug === slug);
 
   useEffect(() => {
-    document.body.style.overflow = menuOpen ? "hidden" : "";
-    return () => {
-      document.body.style.overflow = "";
-    };
-  }, [menuOpen]);
+    setQty(1); setVariantQtys({}); setPincode(''); setDeliveryMessage(''); setPurchaseError('');
+    setShareUrl(window.location.href);
+    try { setFavorite(JSON.parse(localStorage.getItem('nursery-wishlist') || '[]').includes(slug)); }
+    catch { setFavorite(false); }
+  }, [slug]);
 
-  if (productsLoading) {
-    return (
-      <main className="mobile-page product-page">
-        <div className="top-strip">Loading...</div>
-      </main>
-    );
-  }
+  if (productsLoading) return <main className={styles.message} role="status">Loading product…</main>;
+  if (productsError) return <main className={styles.message} role="alert">Unable to load this product. Please refresh to try again.</main>;
+  if (!product) return <main className={styles.message}><h1>Product not found</h1><Link href="/">Back to store</Link></main>;
 
-  if (!product) {
-    return (
-      <main className="mobile-page product-page">
-        <div className="top-strip">Product not found</div>
-      </main>
-    );
-  }
+  const category = categories.find(item => item.id === product.categoryId);
+  const discount = Number(product.oldPrice) > Number(product.price) ? Math.round((Number(product.oldPrice) - Number(product.price)) / Number(product.oldPrice) * 100) : 0;
+  const variants = Object.entries(product.adeniumOptions || {}).filter(([, price]) => price !== '' && price != null);
+  const related = products.filter(item => item.categoryId === product.categoryId && item.id !== product.id).slice(0, 4);
+  const rating = product.demoMetrics ? 4.4 : Number(product.rating);
+  const reviewCount = product.demoMetrics ? 110 : product.reviews;
+  const highlights = [
+    [product.replacementInfo, FiRefreshCw], [product.deliveryInfo, FiTruck],
+    [product.supportInfo, FiMessageCircle], [product.packagingInfo, FiPackage],
+  ].filter(([text]) => text);
 
-  const related = products.filter((item) => item.slug !== product.slug);
-  const ratingValue = Math.round(parseFloat(product.rating));
-  const availableVariants = product?.adeniumOptions ? Object.keys(product.adeniumOptions).filter(k => product.adeniumOptions[k] !== null && product.adeniumOptions[k] !== "") : [];
-
-  const handleAddToCart = (e) => {
-    e.preventDefault();
-    if (availableVariants.length > 0) {
-      const selected = Object.entries(variantQtys).filter(([v, q]) => q > 0);
-      if (selected.length === 0) {
-        alert("Please select at least one option.");
-        return;
-      }
-      selected.forEach(([v, q]) => addItem(product.slug, q, v));
-    } else {
-      addItem(product.slug, qty);
-    }
-    router.push('/cart');
+  const toggleFavorite = () => {
+    const next = !favorite;
+    setFavorite(next);
+    try {
+      const saved = JSON.parse(localStorage.getItem('nursery-wishlist') || '[]');
+      localStorage.setItem('nursery-wishlist', JSON.stringify(next ? [...new Set([...saved, slug])] : saved.filter(item => item !== slug)));
+    } catch {}
   };
 
-  const handleBuyNow = (e) => {
-    e.preventDefault();
-    if (availableVariants.length > 0) {
-      const selected = Object.entries(variantQtys).filter(([v, q]) => q > 0);
-      if (selected.length === 0) {
-        alert("Please select at least one option.");
-        return;
-      }
-      selected.forEach(([v, q]) => addItem(product.slug, q, v));
+  const addSelection = () => {
+    setPurchaseError('');
+    if (!product.inStock) return false;
+    if (variants.length) {
+      const selected = Object.entries(variantQtys).filter(([, quantity]) => quantity > 0);
+      if (!selected.length) { setPurchaseError('Please select at least one option.'); return false; }
+      selected.forEach(([variant, quantity]) => addItem(product.slug, quantity, variant));
+    } else addItem(product.slug, qty);
+    return true;
+  };
+
+  const checkDelivery = event => {
+    event.preventDefault();
+    if (!product.inStock) { setDeliveryMessage('This product is currently sold out.'); return; }
+    const supported = (product.deliveryPincodes || '').split(',').map(code => code.trim()).filter(Boolean);
+    if (supported.length && !supported.includes(pincode)) {
+      setDeliveryMessage(`Delivery to ${pincode} is not currently listed for this product. Contact us for assistance.`);
+    } else if (supported.length) {
+      setDeliveryMessage(`Delivery is available to ${pincode}.${product.deliveryNote ? ` ${product.deliveryNote}` : ''}`);
     } else {
-      addItem(product.slug, qty);
+      setDeliveryMessage(`${product.deliveryNote ? `${product.deliveryNote} ` : ''}Please contact the nursery to confirm delivery to ${pincode}.`);
     }
-    router.push('/checkout');
   };
 
   return (
-    <main className="mobile-page product-page">
-
-      <header className="header">
-        <button className="icon-btn" aria-label="Open menu" onClick={() => setMenuOpen(true)}>
-          <FiMenu />
-        </button>
-        <Link href="/" className="header-center" aria-label="Malati Nursury home" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <img src="https://pub-ce8688bc6c654bcfb99716f7c9373bcd.r2.dev/Malatinursury/MalatiNurseryLogo.png" alt="Malati Nursury Logo" style={{ height: '40px', width: 'auto', objectFit: 'contain', mixBlendMode: 'multiply' }} />
-        </Link>
-        <div className="header-actions">
-          <Link href="/admin" className="icon-btn" aria-label="Admin Panel">
-            <FiUser />
-          </Link>
-          <button className="icon-btn" aria-label="Shopping bag" onClick={() => setIsSidebarOpen(true)}>
-            <FiShoppingBag />
-          </button>
-        </div>
-      </header>
-
-      <div className="search-wrap">
-        <div className="search-box">
-          <FiSearch className="search-icon" />
-          <input type="text" placeholder="Search plants, pots..." aria-label="Search" />
-        </div>
+    <main className={styles.page}>
+      <nav className={styles.breadcrumbs} aria-label="Breadcrumb"><Link href="/">Home</Link><span>/</span>{category && <><Link href={`/category/${category.slug}`}>{category.name}</Link><span>/</span></>}<span>{product.title}</span></nav>
+      <div className={styles.layout}>
+        <div className={styles.productImage}>{product.image ? <img src={product.image} alt={product.title} /> : <span><FiImage aria-hidden="true" />No product image</span>}</div>
+        <section className={styles.details} aria-labelledby="product-title">
+          <div className={styles.titleRow}><h1 id="product-title">{product.title}</h1><button type="button" className={`${styles.favorite} ${favorite ? styles.saved : ''}`} aria-label={favorite ? 'Remove from wishlist' : 'Save to wishlist'} aria-pressed={favorite} onClick={toggleFavorite}><FiHeart /></button></div>
+          {product.soldLast24Hours > 0 && <p className={styles.sold}><FaFire aria-hidden="true" />{product.soldLast24Hours} sold in the last 24 hours</p>}
+          <div className={styles.share}><span>Share this:</span><a href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`} target="_blank" rel="noopener noreferrer" aria-label="Share on Facebook"><FaFacebookF /></a><a href={`https://twitter.com/intent/tweet?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(product.title)}`} target="_blank" rel="noopener noreferrer" aria-label="Share on Twitter"><FaTwitter /></a></div>
+          <div className={styles.rating}>
+            {reviewCount > 0 ? <><span className={styles.stars} aria-hidden="true">{[1, 2, 3, 4, 5].map(star => star <= Math.round(rating) ? <FaStar key={star} /> : <FaRegStar key={star} />)}</span><span><strong>{rating.toFixed(1)}</strong> | {reviewCount} reviews</span>{product.demoMetrics && <span className={styles.demo}>Demo</span>}</> : <span className={styles.noReviews}>No reviews yet</span>}
+          </div>
+          <div className={styles.price}><strong>Rs. {money(product.price)}</strong>{discount > 0 && <><del>Rs. {money(product.oldPrice)}</del><span>{discount}% OFF</span></>}</div>
+          {product.demoMetrics && <p className={styles.viewers}><span className={styles.dot} /><span><strong>14</strong> people are viewing this right now</span><span className={styles.demo}>Demo</span></p>}
+          <form className={styles.delivery} onSubmit={checkDelivery}>
+            <label htmlFor="delivery-pincode"><FiMapPin aria-hidden="true" />Check delivery & availability</label>
+            <div><input id="delivery-pincode" placeholder="Enter Pincode" inputMode="numeric" pattern="[1-9][0-9]{5}" maxLength={6} required title="Enter a valid six-digit Indian pincode" value={pincode} onChange={event => { setPincode(event.target.value.replace(/\D/g, '')); setDeliveryMessage(''); }} /><button type="submit">Check</button></div>
+            {deliveryMessage && <p role="status">{deliveryMessage}<a href={whatsappUrl(`Hello, please confirm delivery of ${product.title} to ${pincode}.`)} target="_blank" rel="noopener noreferrer">Contact nursery</a></p>}
+          </form>
+          {variants.length ? <div className={styles.variants}><h2>Select options</h2>{variants.map(([variant, price]) => <div key={variant}><span>{variant}<small>Rs. {money(price)}</small></span><div className={styles.quantity}><button type="button" aria-label={`Decrease ${variant} quantity`} onClick={() => setVariantQtys(current => ({ ...current, [variant]: Math.max(0, (current[variant] || 0) - 1) }))}><FiMinus /></button><strong>{variantQtys[variant] || 0}</strong><button type="button" aria-label={`Increase ${variant} quantity`} onClick={() => setVariantQtys(current => ({ ...current, [variant]: (current[variant] || 0) + 1 }))}><FiPlus /></button></div></div>)}</div> : <div className={styles.quantityRow}><strong>Qty:</strong><div className={styles.quantity}><button type="button" aria-label="Decrease quantity" disabled={qty <= 1} onClick={() => setQty(current => Math.max(1, current - 1))}><FiMinus /></button><output aria-live="polite">{qty}</output><button type="button" aria-label="Increase quantity" onClick={() => setQty(current => current + 1)}><FiPlus /></button></div></div>}
+          {purchaseError && <p role="alert" className={styles.error}>{purchaseError}</p>}
+          <div className={styles.buttons}><button type="button" disabled={!product.inStock} onClick={() => { if (addSelection()) showCartAfterAdd(); }}>{product.inStock ? 'Add to Cart' : 'Sold Out'}</button><button type="button" disabled={!product.inStock} onClick={() => { if (addSelection()) router.push('/checkout'); }}>Buy It Now</button></div>
+          <PaymentMethods />
+          {highlights.length > 0 && <div className={styles.highlights}>{highlights.map(([text, Icon], index) => <div key={index}><Icon aria-hidden="true" /><span>{text}</span></div>)}</div>}
+          <div className={styles.accordions}>
+            {[['Product Description', product.description], ['Plant Care Tips', product.plantCare], ['Delivery & Returns', product.deliveryReturns]].map(([title, content], index) => <details key={`${product.id}-${title}`} open={index === 0}><summary>{title}<FiChevronDown aria-hidden="true" /></summary><p>{content || 'Information has not been provided yet.'}</p></details>)}
+          </div>
+        </section>
       </div>
-
-      <div className="breadcrumbs">
-        <Link href="/">Home</Link>
-        <span>/</span>
-        <span>Best Sellers</span>
-        <span>/</span>
-        <span className="crumb-muted">{product.title}</span>
-      </div>
-
-      <section className="product-hero-image">
-        <div className="product-detail-image">
-          <img src={product.image} alt={product.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-          <span className="hero-badge">{product.offer}</span>
-          <span className="hero-leaf"><FaLeaf /> Live Plant</span>
-        </div>
-      </section>
-
-      <section className="product-detail-body">
-        <p className="brand-eyebrow">Malati Nursury · Best Seller</p>
-        <h1>{product.title}</h1>
-
-        {!isWholesale && (
-          <>
-            <div className="rating-line">
-              <span className="stars" aria-hidden="true">
-                {[1, 2, 3, 4, 5].map((n) => (
-                  <FiStar key={n} className={n <= ratingValue ? "star filled" : "star"} />
-                ))}
-              </span>
-              <strong>{product.rating}</strong>
-              <span className="rating-count">({product.reviews} reviews)</span>
-            </div>
-
-            <p className="urgent-pill">🔥 36 sold in the last 24 hours</p>
-          </>
-        )}
-
-        {!isWholesale && (
-          <>
-            <div className="price-row">
-              {!availableVariants.length && (
-                <>
-                  <strong>₹{product.price}</strong>
-                  {product.oldPrice && <span>₹{product.oldPrice}</span>}
-                  <em className="offer-pill inline">{product.offer}</em>
-                </>
-              )}
-              {availableVariants.length > 0 && (
-                <em className="offer-pill inline">{product.offer}</em>
-              )}
-            </div>
-            <p className="tax-note">Inclusive of all taxes</p>
-          </>
-        )}
-        <p className="viewing-now">👀 12 people are viewing this right now</p>
-
-        {product?.description && (
-          <div className="product-description-inline" style={{ margin: '16px 0', lineHeight: '1.6', color: '#444', whiteSpace: 'pre-wrap' }}>
-            {product.description}
-          </div>
-        )}
-
-        {!isWholesale && (
-          <div className="delivery-box">
-            <p>Check delivery & availability</p>
-            <div className="pin-row">
-              <input placeholder="Enter Pincode" aria-label="Enter pincode" />
-              <button type="button">Check</button>
-            </div>
-          </div>
-        )}
-
-        {!isWholesale && (
-          <>
-            {availableVariants.length > 0 ? (
-              <div className="variants-section" style={{marginBottom: '20px', padding: '16px', background: '#f5f8f6', borderRadius: '8px'}}>
-                <h3 style={{marginBottom: '12px', fontSize: '16px'}}>Select Options:</h3>
-                {availableVariants.map(variant => {
-                  const vQty = variantQtys[variant] || 0;
-                  return (
-                    <div key={variant} style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px'}}>
-                      <div>
-                        <strong>{variant}</strong>
-                        <div style={{fontSize: '14px', color: '#1f6b2c'}}>₹{product.adeniumOptions[variant]}</div>
-                      </div>
-                      <div className="qty-box" style={{margin: 0}}>
-                        <button type="button" aria-label="Decrease quantity" onClick={() => setVariantQtys(prev => ({...prev, [variant]: Math.max(0, (prev[variant] || 0) - 1)}))}>
-                          <FiMinus />
-                        </button>
-                        <strong>{vQty}</strong>
-                        <button type="button" aria-label="Increase quantity" onClick={() => setVariantQtys(prev => ({...prev, [variant]: (prev[variant] || 0) + 1}))}>
-                          <FiPlus />
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <div className="qty-row">
-                <span>Qty:</span>
-                <div className="qty-box">
-                  <button type="button" aria-label="Decrease quantity" onClick={() => setQty((q) => Math.max(1, q - 1))}>
-                    <FiMinus />
-                  </button>
-                  <strong>{qty}</strong>
-                  <button type="button" aria-label="Increase quantity" onClick={() => setQty((q) => q + 1)}>
-                    <FiPlus />
-                  </button>
-                </div>
-              </div>
-            )}
-
-            <div className="cta-row">
-              <button onClick={handleAddToCart} className="add-btn ghost">
-                Add to Cart
-              </button>
-              <button onClick={handleBuyNow} className="add-btn">
-                Buy It Now
-              </button>
-            </div>
-          </>
-        )}
-      </section>
-
-
-
-      <section className="recommend-wrap">
-        <h3>You May Also Like</h3>
-        <div className="recommend-row">
-          {related.map((item) => (
-            <article key={item.slug} className="recommend-card">
-              <span className="offer-pill">{item.offer}</span>
-              <Link href={`/product/${item.slug}${mode ? `?mode=${mode}` : ''}`} className="product-image-link" style={{ display: 'block', overflow: 'hidden' }}>
-                <img src={item.image} alt={item.title} loading="lazy" decoding="async" style={{ width: '100%', height: '180px', objectFit: 'cover' }} />
-              </Link>
-              <div className="product-info">
-                <p className="product-title">{item.title}</p>
-                {!isWholesale && (
-                  <div className="price-row">
-                    <strong>{item.price}</strong>
-                    <span>{item.oldPrice}</span>
-                  </div>
-                )}
-                <Link href={`/product/${item.slug}${mode ? `?mode=${mode}` : ''}`} className="add-btn">View</Link>
-              </div>
-            </article>
-          ))}
-        </div>
-      </section>
-
-      {menuOpen && <button className="menu-overlay" aria-label="Close menu overlay" onClick={() => setMenuOpen(false)} />}
-      <aside className={`side-menu ${menuOpen ? "open" : ""}`} aria-label="Website menu">
-        <div className="side-menu-head">
-          <strong>Menu</strong>
-          <button className="icon-btn" aria-label="Close menu" onClick={() => setMenuOpen(false)}>
-            <FiX />
-          </button>
-        </div>
-        <nav className="side-menu-links">
-          <Link href="/" onClick={() => setMenuOpen(false)}>
-            Home <FiChevronRight />
-          </Link>
-          <button type="button" className="side-menu-link-btn" onClick={() => {
-            setMenuOpen(false);
-            setIsSidebarOpen(true);
-          }}>
-            Cart <FiChevronRight />
-          </button>
-          <Link href="/checkout" onClick={() => setMenuOpen(false)}>
-            Checkout <FiChevronRight />
-          </Link>
-
-        </nav>
-        <div className="menu-categories">
-          <p>Categories</p>
-          <div className="menu-category-grid">
-            {menuCategories.map((item) => (
-              <button key={item} type="button" className="menu-category-item" onClick={() => setMenuOpen(false)}>
-                {item}
-              </button>
-            ))}
-          </div>
-        </div>
-      </aside>
-
-      <nav className="bottom-nav visible" aria-label="Primary navigation">
-        {isWholesale ? (
-          <div style={{ padding: '4px', width: '100%', gridColumn: '1 / -1' }}>
-            <a href="tel:+917427941760" className="add-btn" style={{ 
-                width: '100%', 
-                margin: 0, 
-                padding: '14px', 
-                fontSize: '18px', 
-                display: 'flex', 
-                gap: '12px',
-                justifyContent: 'center', 
-                alignItems: 'center', 
-                borderRadius: '12px',
-                boxShadow: '0 4px 12px rgba(24, 122, 50, 0.3)'
-              }}>
-              <FiPhone style={{ fontSize: '22px' }} />
-              Call now for enquiry
-            </a>
-          </div>
-        ) : (
-          <>
-            <Link href="/" className="bottom-item" aria-label="Home">
-              <span className="bottom-icon">
-                <FiHome />
-              </span>
-              <span>Home</span>
-            </Link>
-            <button className="bottom-item" type="button" aria-label="Menu" onClick={() => setMenuOpen(true)}>
-              <span className="bottom-icon">
-                <FiGrid />
-              </span>
-              <span>Menu</span>
-            </button>
-            <button className="bottom-item" type="button" aria-label="Cart" onClick={() => setIsSidebarOpen(true)}>
-              <span className="bottom-icon">
-                <FiPackage />
-              </span>
-              <span>Cart</span>
-            </button>
-            <a href="https://wa.me/917427941760" className="bottom-item" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp">
-              <span className="bottom-icon" style={{ color: '#25D366' }}>
-                <FaWhatsapp />
-              </span>
-              <span>WhatsApp</span>
-            </a>
-          </>
-        )}
-      </nav>
+      {related.length > 0 && <section className={styles.related}><h2>You May Also Like</h2><div>{related.map(item => <ProductCard key={item.id} product={item} />)}</div></section>}
     </main>
   );
 }

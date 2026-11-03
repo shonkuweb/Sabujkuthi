@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '../../../../lib/prisma';
 import crypto from 'crypto';
+import { createAdminSession } from '../../../../lib/admin-session.mjs';
 
 function hashPassword(password) {
   return crypto.createHash('sha256').update(password).digest('hex');
@@ -9,6 +10,7 @@ function hashPassword(password) {
 export async function POST(request) {
   try {
     const { password } = await request.json();
+    if (typeof password !== 'string' || !password || password.length > 200) return NextResponse.json({ success: false, message: 'Enter your admin password.' }, { status: 400 });
 
     const passwordSetting = await prisma.settings.findUnique({
       where: { key: 'admin_password' }
@@ -31,7 +33,7 @@ export async function POST(request) {
       const response = NextResponse.json({ success: true });
       response.cookies.set({
         name: 'admin_token',
-        value: 'authenticated',
+        value: await createAdminSession(),
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'strict',

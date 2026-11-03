@@ -1,0 +1,16 @@
+.card { display: flex; flex-direction: column; min-width: 0; background: #fff; border-radius: 20px; overflow: hidden; box-shadow: 0 6px 18px #183b2010; }
+.imageLink { display: block; position: relative; aspect-ratio: 1; width: 100%; background: #f0f3ef; overflow: hidden; color: #809584; text-decoration: none; }
+.imageLink img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.noImage { display: flex; flex-direction: column; gap: 10px; align-items: center; justify-content: center; width: 100%; height: 100%; font-size: 11px; }
+.noImage svg { width: 32px; height: 32px; }
+.discount { position: absolute; left: 8px; top: 8px; padding: 5px 8px; border-radius: 999px; color: #fff; background: #ff6532; font-size: 11px; font-weight: 700; }
+.info { display: flex; flex-direction: column; gap: 10px; padding: 11px 10px 12px; flex: 1; }
+.title { color: #222; font-size: 13px; font-weight: 600; line-height: 1.4; text-decoration: none; overflow-wrap: anywhere; }
+.prices { display: flex; align-items: baseline; flex-wrap: wrap; gap: 5px; margin-bottom: 5px; line-height: 1.4; }
+.prices strong { color: #222; font-size: 14px; }
+.prices del { color: #999; font-size: 11px; }
+.add { display: flex; justify-content: center; align-items: center; width: 100%; min-height: 38px; margin-top: auto; padding: 10px 5px; border: 0; border-radius: 6px; background: #ff6532; color: #fff; font-family: inherit; font-size: 12px; font-weight: 700; cursor: pointer; text-decoration: none; text-align: center; }
+.add:hover { background: #e85325; }
+.add:disabled { color: #aaa; background: #f0f0f0; cursor: default; }
+.card a:focus-visible, .add:focus-visible { outline: 3px solid #247346; outline-offset: -3px; }
+@media (max-width: 360px) { .info { padding: 10px 8px; } .prices strong { font-size: 12px; } .prices del { font-size: 10px; } }

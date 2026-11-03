@@ -1,62 +1,97 @@
 import { NextResponse } from 'next/server';
-import fs from 'fs';
-import path from 'path';
+import { randomUUID } from 'node:crypto';
+import { prisma } from '../../../lib/prisma';
+import { isAdminRequest } from '../../../lib/admin-session.mjs';
+import { uploadDataUrlToR2 } from '../../../lib/r2.mjs';
 
-const dataFilePath = path.join(process.cwd(), 'app', 'data', 'categories.json');
+export const dynamic = 'force-dynamic';
 
-function readCategories() {
-  try {
-    if (!fs.existsSync(dataFilePath)) return [];
-    const fileData = fs.readFileSync(dataFilePath, 'utf8');
-    return JSON.parse(fileData);
-  } catch (error) {
-    return [];
+async function unauthorized(request) { return !await isAdminRequest(request); }
+
+function validate(data) {
+  if (typeof data.name !== 'string' || !data.name.trim() || data.name.trim().length > 80) {
+    return 'Enter a category name between 1 and 80 characters.';
   }
+  if (typeof data.isVisible !== 'boolean') return 'Visibility must be enabled or disabled.';
+  if (data.image != null && typeof data.image !== 'string') return 'Invalid thumbnail.';
+  if (data.image) {
+    if (data.image.length > 1400000) return 'Thumbnail is too large. Choose a smaller image.';
+    const embeddedImage = /^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/]+={0,2}$/.test(data.image);
+    let remoteImage = false;
+    try { remoteImage = ['http:', 'https:'].includes(new URL(data.image).protocol); } catch {}
+    if (!embeddedImage && !remoteImage) return 'Use a JPG, PNG or WebP thumbnail.';
+  }
+  return null;
 }
 
 export async function GET() {
-  const categories = readCategories();
-  return NextResponse.json(categories);
-}
-
-export async function POST(request) {
   try {
-    const newCategory = await request.json();
-    const categories = readCategories();
-
-    newCategory.id = Date.now().toString();
-
-    categories.push(newCategory);
-
-    fs.writeFileSync(dataFilePath, JSON.stringify(categories, null, 2));
-
-    return NextResponse.json({ message: 'Category added successfully', category: newCategory }, { status: 201 });
-  } catch (error) {
-    console.error("Failed to add category:", error);
-    return NextResponse.json({ error: 'Failed to add category' }, { status: 500 });
+    const categories = await prisma.category.findMany({ orderBy: { name: 'asc' } });
+    return NextResponse.json(categories.map(({ nameKey, ...category }) => category));
+  } catch {
+    return NextResponse.json({ error: 'Unable to load categories. Please try again.' }, { status: 500 });
   }
 }
 
-export async function DELETE(request) {
+async function saveCategory(request, isUpdate) {
+  if (await unauthorized(request)) return NextResponse.json({ error: 'Please log in to manage categories.' }, { status: 401 });
+  let data;
+  try { data = await request.json(); } catch {
+    return NextResponse.json({ error: 'Invalid category data.' }, { status: 400 });
+  }
+  if (!data || typeof data !== 'object') return NextResponse.json({ error: 'Invalid category data.' }, { status: 400 });
+  const error = validate(data);
+  if (error) return NextResponse.json({ error }, { status: 400 });
+
   try {
-    const { searchParams } = new URL(request.url);
-    const slug = searchParams.get('slug');
-
-    if (!slug) {
-      return NextResponse.json({ error: 'Slug is required' }, { status: 400 });
+    const categories = await prisma.category.findMany();
+    const index = isUpdate ? categories.findIndex(category => String(category.id) === String(data.id)) : -1;
+    if (isUpdate && index === -1) return NextResponse.json({ error: 'Category not found.' }, { status: 404 });
+    const name = data.name.trim();
+    if (categories.some((category, position) => position !== index && category.name.toLocaleLowerCase() === name.toLocaleLowerCase())) {
+      return NextResponse.json({ error: 'A category with this name already exists.' }, { status: 409 });
     }
-
-    let categories = readCategories();
-    const initialLength = categories.length;
-    categories = categories.filter(c => c.slug !== slug);
-
-    if (categories.length === initialLength) {
-      return NextResponse.json({ error: 'Category not found' }, { status: 404 });
+    const id = isUpdate ? categories[index].id : randomUUID();
+    const baseSlug = name.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, '-').replace(/^-|-$/g, '') || 'category';
+    const slug = isUpdate ? categories[index].slug : `${baseSlug}-${id.slice(0, 8)}`;
+    let imageUrl = data.image || '';
+    if (imageUrl && imageUrl.startsWith('data:image/')) {
+      try {
+        imageUrl = await uploadDataUrlToR2(imageUrl, 'SabujKuthi/categories', baseSlug);
+      } catch (err) {
+        console.warn('R2 upload failed, preserving provided image:', err);
+      }
     }
-
-    fs.writeFileSync(dataFilePath, JSON.stringify(categories, null, 2));
-    return NextResponse.json({ message: 'Category deleted successfully' }, { status: 200 });
+    const category = {
+      ...(isUpdate ? categories[index] : {}),
+      id, slug, name,
+      image: imageUrl,
+      isVisible: data.isVisible,
+    };
+    const storedCategory = { ...category, nameKey: name.toLocaleLowerCase() };
+    if (isUpdate) await prisma.category.update({ where: { id }, data: storedCategory });
+    else await prisma.category.create({ data: storedCategory });
+    return NextResponse.json({ category }, { status: isUpdate ? 200 : 201 });
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to delete category' }, { status: 500 });
+    if (error.code === 'P2002') return NextResponse.json({ error: 'A category with this name already exists.' }, { status: 409 });
+    return NextResponse.json({ error: 'Unable to save the category. Please try again.' }, { status: 500 });
+  }
+}
+
+export async function POST(request) { return saveCategory(request, false); }
+export async function PUT(request) { return saveCategory(request, true); }
+
+export async function DELETE(request) {
+  if (await unauthorized(request)) return NextResponse.json({ error: 'Please log in to manage categories.' }, { status: 401 });
+  const slug = new URL(request.url).searchParams.get('slug');
+  if (!slug) return NextResponse.json({ error: 'Slug is required.' }, { status: 400 });
+  try {
+    const categories = await prisma.category.findMany();
+    const remaining = categories.filter(category => category.slug !== slug);
+    if (remaining.length === categories.length) return NextResponse.json({ error: 'Category not found.' }, { status: 404 });
+    await prisma.category.delete({ where: { slug } });
+    return NextResponse.json({ message: 'Category deleted.' });
+  } catch {
+    return NextResponse.json({ error: 'Unable to delete category.' }, { status: 500 });
   }
 }

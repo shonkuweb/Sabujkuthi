@@ -1,302 +1,137 @@
 "use client";
 
 import Link from "next/link";
+import { business } from "../../lib/business.mjs";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
-import {
-  FiChevronRight,
-  FiGrid,
-  FiHome,
-  FiLock,
-  FiPackage,
-  FiX,
-  FiShield,
-  FiCheckCircle,
-  FiTruck
-} from "react-icons/fi";
-import { FaWhatsapp } from "react-icons/fa";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { FiCreditCard, FiLock, FiShield } from "react-icons/fi";
 import { useCart } from "../context/CartContext";
-import { categories as menuCategories } from "../data/categories";
+import { deliveryPaise, FREE_DELIVERY_THRESHOLD } from "../../lib/shipping.mjs";
+import { checkoutPost, loadRazorpay } from "../../lib/razorpay-checkout";
+import styles from "./page.module.css";
 
-const FREE_DELIVERY_THRESHOLD = 4999;
-const DELIVERY_CHARGE = 40;
-const toAmount = (value) => {
-  const match = String(value).replace(/,/g, "").match(/\d+(?:\.\d+)?/);
-  return match ? parseFloat(match[0]) : 0;
-};
+const money = paise => (paise / 100).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 export default function CheckoutPage() {
   const router = useRouter();
-  const [menuOpen, setMenuOpen] = useState(false);
-  const { items: cartItems, clear, setIsSidebarOpen } = useCart();
-  const [form, setForm] = useState({ name: "", phone: "", pincode: "", address: "" });
-  const [selectedAdeniumOptions, setSelectedAdeniumOptions] = useState([]);
+  const { items, productsLoading, productsError, removePurchased } = useCart();
+  const [form, setForm] = useState({ name: '', phone: '', email: '', pincode: '', address: '' });
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState('');
+  const [pending, setPending] = useState(null);
+  const [testMode, setTestMode] = useState(false);
+  const attempt = useRef(null);
+  const subtotal = items.reduce((sum, item) => sum + Math.round(Number(item.price) * 100) * item.qty, 0);
+  const shipping = deliveryPaise(subtotal);
+  const total = subtotal + shipping;
 
-  const hasAdenium = cartItems.some(item => item.title?.toLowerCase().includes('adenium') || item.slug?.toLowerCase().includes('adenium'));
-
-  const ADENIUM_CHECKOUT_OPTIONS = [
-    'Addenium Multigrafted 8" Pot 1200',
-    'Addenium Multigrafted 10" Pot 1500',
-    'Addenium Single grafted 150'
-  ];
-
-  const itemTotal = cartItems.reduce((sum, i) => sum + toAmount(i.price) * i.qty, 0);
-  const deliveryCharge = cartItems.length === 0 || itemTotal >= FREE_DELIVERY_THRESHOLD ? 0 : DELIVERY_CHARGE;
-  const grandTotal = itemTotal + deliveryCharge;
+  const finish = useCallback((order, token) => {
+    sessionStorage.setItem(`paid-order:${order.id}`, token);
+    sessionStorage.removeItem('pending-checkout');
+    removePurchased(order.id, order.items);
+    router.replace(`/order-confirmation/${order.id}`);
+  }, [removePurchased, router]);
 
   useEffect(() => {
-    document.body.style.overflow = menuOpen ? "hidden" : "";
-    return () => {
-      document.body.style.overflow = "";
-    };
-  }, [menuOpen]);
+    let active = true;
+    let saved;
+    try { saved = JSON.parse(sessionStorage.getItem('pending-checkout') || 'null'); } catch {}
+    if (saved?.orderId && saved?.token) {
+      setPending(saved);
+      checkoutPost('/api/checkout/status', saved).then(result => {
+        if (active && result.status === 'paid') finish(result.order, saved.token);
+      }).catch(() => { if (active) setMessage('A previous checkout is awaiting confirmation. Check its payment status before paying again.'); });
+    }
+    return () => { active = false; };
+  }, [finish]);
 
-  const updateField = (key) => (e) => setForm((prev) => ({ ...prev, [key]: e.target.value }));
-
-  const placeOrder = () => {
-    if (cartItems.length === 0) {
-      alert("Your cart is empty.");
-      return;
-    }
-    if (!form.name.trim() || !form.phone.trim() || !form.address.trim() || !form.pincode.trim()) {
-      alert("Please fill in all delivery details.");
-      return;
-    }
-    if (hasAdenium && selectedAdeniumOptions.length === 0) {
-      alert("Please select at least one Adenium option.");
-      return;
-    }
-    const orderId = `BPN-${Date.now().toString().slice(-6)}`;
-    const order = {
-      id: orderId,
-      customer: form.name.trim(),
-      phone: form.phone.trim(),
-      address: form.address.trim(),
-      pincode: form.pincode.trim(),
-      total: `Rs. ${grandTotal.toFixed(2)}`,
-      status: "Pending",
-      placedAt: new Date().toISOString(),
-      items: cartItems.map((i) => ({ title: i.title, qty: i.qty, price: i.price }))
-    };
+  const checkStatus = async () => {
+    if (!pending) return;
+    setBusy(true); setMessage('Checking your payment…');
     try {
-      const existing = JSON.parse(localStorage.getItem("admin-orders") || "[]");
-      localStorage.setItem("admin-orders", JSON.stringify([order, ...existing]));
-    } catch {
-      localStorage.setItem("admin-orders", JSON.stringify([order]));
-    }
+      const result = await checkoutPost('/api/checkout/status', pending);
+      if (result.status === 'paid') finish(result.order, pending.token);
+      else setMessage('No completed payment is confirmed yet. You can retry checkout using the same order.');
+    } catch (error) { setMessage(error.message); }
+    finally { setBusy(false); }
+  };
 
-    let message = `*New Order: ${orderId}*\n\n`;
-    message += `*Customer Details:*\n`;
-    message += `Name: ${form.name.trim()}\n`;
-    message += `Phone: ${form.phone.trim()}\n`;
-    message += `Address: ${form.address.trim()}\n`;
-    message += `Pincode: ${form.pincode.trim()}\n\n`;
-    message += `*Order Items:*\n`;
-    cartItems.forEach(item => {
-      message += `- ${item.title} (x${item.qty}) - Rs. ${(toAmount(item.price) * item.qty).toFixed(2)}\n`;
-    });
-    message += `\n*Item Total:* Rs. ${itemTotal.toFixed(2)}\n`;
-    message += `*Delivery Charge:* ${deliveryCharge === 0 ? "FREE" : `Rs. ${deliveryCharge.toFixed(2)}`}\n`;
-    message += `*Total Payable:* Rs. ${grandTotal.toFixed(2)}`;
-
-    if (hasAdenium && selectedAdeniumOptions.length > 0) {
-      message += `\n\n*Selected Adenium Options:*\n`;
-      selectedAdeniumOptions.forEach(opt => {
-        message += `✅ ${opt}\n`;
+  const pay = async event => {
+    event.preventDefault();
+    if (busy || !items.length) return;
+    setBusy(true); setMessage('Preparing secure checkout…');
+    try {
+      if (pending) {
+        const existing = await checkoutPost('/api/checkout/status', pending);
+        if (existing.status === 'paid') { finish(existing.order, pending.token); return; }
+      }
+      const payload = { customer: form, items: items.map(item => ({ slug: item.slug, qty: item.qty, variant: item.variant || null })), expectedTotal: total };
+      const fingerprint = JSON.stringify(payload);
+      if (!attempt.current || attempt.current.fingerprint !== fingerprint) attempt.current = { fingerprint, token: !attempt.current && pending ? pending.token : `${crypto.randomUUID()}${crypto.randomUUID()}` };
+      const token = attempt.current.token;
+      // Check browser storage before opening a payment so the receipt can be recovered.
+      sessionStorage.setItem('checkout-storage-check', 'ok'); sessionStorage.removeItem('checkout-storage-check');
+      const Razorpay = await loadRazorpay();
+      const result = await checkoutPost('/api/checkout/create', { ...payload, token });
+      if (result.status === 'paid') { finish(result.order, token); return; }
+      const session = { orderId: result.orderId, token };
+      sessionStorage.setItem('pending-checkout', JSON.stringify(session));
+      setPending(session); setTestMode(result.paymentMode === 'test');
+      const checkout = new Razorpay({
+        key: result.keyId, amount: result.amount, currency: result.currency,
+        order_id: result.razorpayOrderId, name: business.name, description: `Order ${result.receipt}`,
+        prefill: result.customer, theme: { color: '#26784a' },
+        handler: async payment => {
+          setMessage('Confirming your payment with Razorpay…');
+          try {
+            const verified = await checkoutPost('/api/checkout/verify', { ...session, ...payment });
+            if (verified.status === 'paid') finish(verified.order, token);
+            else setMessage('Payment is awaiting capture. Use “Check payment status” before retrying.');
+          } catch (error) { setMessage(`${error.message} Check payment status before paying again.`); }
+          finally { setBusy(false); }
+        },
+        modal: { ondismiss: async () => {
+          try {
+            const status = await checkoutPost('/api/checkout/status', session);
+            if (status.status === 'paid') { finish(status.order, token); return; }
+            setMessage('Payment checkout was closed. Your cart is saved; retry when you are ready.');
+          } catch { setMessage('Checkout closed. Check payment status before retrying.'); }
+          finally { setBusy(false); }
+        } },
       });
+      checkout.on('payment.failed', () => setMessage('Payment failed. You can retry in Razorpay or close checkout. Your cart has been kept.'));
+      setMessage(result.paymentMode === 'test' ? 'Razorpay test checkout is open. No real money will be charged.' : 'Complete your payment in Razorpay.');
+      checkout.open();
+    } catch (error) {
+      if (error.code === 'restart_checkout' || error.status === 502) attempt.current = attempt.current ? { ...attempt.current, token: `${crypto.randomUUID()}${crypto.randomUUID()}` } : null;
+      setMessage(error.message || 'Unable to start payment. Please try again.'); setBusy(false);
     }
-
-    const encodedMessage = encodeURIComponent(message);
-    const whatsappUrl = `https://wa.me/917427941760?text=${encodedMessage}`;
-    
-    // Open WhatsApp in new window
-    window.open(whatsappUrl, '_blank');
-
-    clear();
-    router.push(`/track-order?id=${orderId}`);
   };
 
   return (
-    <main className="mobile-page">
-      <section className="checkout-shell-modern">
-        <div style={{ textAlign: 'center', marginBottom: '24px' }}>
-          <div className="secure-pill-modern" style={{ marginBottom: '16px' }}>
-            <FiLock /> Secure Checkout
-          </div>
-          
-          <h1 style={{ marginBottom: '8px' }}>Complete Your Order</h1>
-          
-          {cartItems.length === 0 && <p className="empty-small" style={{ marginBottom: '0' }}>Your cart is empty.</p>}
-        </div>
-        
-        <div className="checkout-card-modern">
-          <div className="card-head">
-            <h3>
-              <span className="step-badge-modern">1</span>Delivery Details
-            </h3>
-          </div>
-          <input className="checkout-input-modern" placeholder="Full Name" value={form.name} onChange={updateField("name")} />
-          <input className="checkout-input-modern" placeholder="Phone Number" type="tel" value={form.phone} onChange={updateField("phone")} />
-          <input className="checkout-input-modern" placeholder="Pincode" type="number" value={form.pincode} onChange={updateField("pincode")} />
-          <textarea className="checkout-input-modern" placeholder="Full Address (House No, Street, Landmark)" rows={3} value={form.address} onChange={updateField("address")} style={{ marginBottom: 0 }} />
-        </div>
-
-        {hasAdenium && (
-          <div className="checkout-card-modern">
-            <div className="card-head">
-              <h3>
-                <span className="step-badge-modern" style={{ background: 'linear-gradient(135deg, #f1512f 0%, #c43212 100%)' }}>!</span>
-                Adenium Options
-              </h3>
-            </div>
-            <p style={{ fontSize: '14px', marginBottom: '16px', color: '#666', lineHeight: 1.5 }}>
-              Please select your preferred Adenium pot sizes (you can choose multiple):
-            </p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {ADENIUM_CHECKOUT_OPTIONS.map((opt) => {
-                const isSelected = selectedAdeniumOptions.includes(opt);
-                return (
-                  <label key={opt} className={`adenium-option-modern ${isSelected ? 'selected' : ''}`}>
-                    <input
-                      type="checkbox"
-                      className="adenium-checkbox-modern"
-                      checked={isSelected}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          setSelectedAdeniumOptions(prev => [...prev, opt]);
-                        } else {
-                          setSelectedAdeniumOptions(prev => prev.filter(o => o !== opt));
-                        }
-                      }}
-                    />
-                    {opt}
-                  </label>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        <div className="checkout-card-modern bill-card-modern">
-          <div className="card-head">
-            <h3>
-              <span className="step-badge-modern">2</span>Order Summary
-            </h3>
-          </div>
-          
-          {cartItems.length === 0 && <p className="empty-small">No products selected.</p>}
-          
-          <div className="order-lines-modern">
-            {cartItems.map((item) => (
-              <div className="order-line-modern" key={`${item.slug}-${item.variant || 'base'}`}>
-                <div 
-                  className={`cart-item-img ${item.imageClass || ''}`} 
-                  style={{ 
-                    width: 64, 
-                    height: 64, 
-                    ...(item.image ? { backgroundImage: `url(${item.image})`, backgroundSize: 'cover', backgroundPosition: 'center' } : {})
-                  }} 
-                />
-                <div className="order-line-info-modern">
-                  <p>{item.title}</p>
-                  <span>Variant: {item.variant || 'Base'} • Qty: {item.qty}</span>
-                </div>
-                <strong className="order-line-total-modern">
-                  Rs. {(toAmount(item.price) * item.qty).toFixed(2)}
-                </strong>
-              </div>
-            ))}
-          </div>
-
-          <div style={{ marginTop: '20px' }}>
-            <div className="bill-summary-row">
-              <span>Item Total</span>
-              <strong>Rs. {itemTotal.toFixed(2)}</strong>
-            </div>
-            <div className="bill-summary-row">
-              <span>Delivery Charge</span>
-              <strong>{deliveryCharge === 0 ? "FREE" : `Rs. ${deliveryCharge.toFixed(2)}`}</strong>
-            </div>
-            <div className="bill-total-row">
-              <span>Total Payable</span>
-              <strong>Rs. {grandTotal.toFixed(2)}</strong>
-            </div>
-          </div>
-        </div>
-
-
-        <button type="button" className="checkout-btn-whatsapp-modern" onClick={placeOrder}>
-          <div className="checkout-btn-whatsapp-content">
-            <FaWhatsapp size={24} />
-            <span>Order via WhatsApp</span>
-          </div>
-          {cartItems.length > 0 && <span>Rs. {grandTotal.toFixed(2)}</span>}
-        </button>
-        <p className="checkout-secure-note-modern">
-          <FiLock /> Your order will be placed securely via WhatsApp
-        </p>
-      </section>
-
-      {menuOpen && <button className="menu-overlay blur-overlay" aria-label="Close menu overlay" onClick={() => setMenuOpen(false)} />}
-      <aside className={`side-menu ${menuOpen ? "open" : ""}`} aria-label="Website menu">
-        <div className="side-menu-head">
-          <strong>Menu</strong>
-          <button className="icon-btn" aria-label="Close menu" onClick={() => setMenuOpen(false)}>
-            <FiX />
-          </button>
-        </div>
-        <nav className="side-menu-links">
-          <Link href="/" onClick={() => setMenuOpen(false)}>
-            Home <FiChevronRight />
-          </Link>
-          <button type="button" className="side-menu-link-btn" onClick={() => {
-            setMenuOpen(false);
-            setIsSidebarOpen(true);
-          }}>
-            Cart <FiChevronRight />
-          </button>
-          <Link href="/checkout" onClick={() => setMenuOpen(false)}>
-            Checkout <FiChevronRight />
-          </Link>
-        </nav>
-        <div className="menu-categories">
-          <p>Categories</p>
-          <div className="menu-category-grid">
-            {menuCategories.map((item) => (
-              <button key={item} type="button" className="menu-category-item" onClick={() => setMenuOpen(false)}>
-                {item}
-              </button>
-            ))}
-          </div>
-        </div>
-      </aside>
-
-      <nav className="bottom-nav visible" aria-label="Primary navigation">
-        <Link href="/" className="bottom-item" aria-label="Home">
-          <span className="bottom-icon">
-            <FiHome />
-          </span>
-          <span>Home</span>
-        </Link>
-        <button className="bottom-item" type="button" aria-label="Menu" onClick={() => setMenuOpen(true)}>
-          <span className="bottom-icon">
-            <FiGrid />
-          </span>
-          <span>Menu</span>
-        </button>
-        <button className="bottom-item" type="button" aria-label="Cart" onClick={() => setIsSidebarOpen(true)}>
-          <span className="bottom-icon">
-            <FiPackage />
-          </span>
-          <span>Cart</span>
-        </button>
-        <a href="https://wa.me/917427941760" className="bottom-item" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp">
-          <span className="bottom-icon" style={{ color: '#25D366' }}>
-            <FaWhatsapp />
-          </span>
-          <span>WhatsApp</span>
-        </a>
-      </nav>
+    <main className={styles.page}>
+      <div className={styles.heading}><span><FiLock aria-hidden="true" />Secure checkout</span><h1>Complete Your Order</h1><p>Enter your delivery details and pay securely with Razorpay.</p></div>
+      {productsLoading ? <p role="status">Loading your cart…</p> : productsError ? <p role="alert">Your cart could not be loaded. Refresh before checking out.</p> : <form onSubmit={pay}>
+        <fieldset disabled={busy} className={styles.fields}>
+          <section className={styles.card}><h2><span>1</span>Delivery details</h2>
+            {[
+              ['name', 'Full name', 'text', 'name'], ['phone', 'Mobile number', 'tel', 'tel'],
+              ['email', 'Email (optional)', 'email', 'email'], ['pincode', 'Pincode', 'text', 'postal-code'],
+            ].map(([key, label, type, autoComplete]) => <label className={styles.label} key={key}>{label}<input type={type} autoComplete={autoComplete} required={key !== 'email'} maxLength={key === 'pincode' ? 6 : key === 'phone' ? 16 : key === 'name' ? 100 : 254} minLength={key === 'name' ? 2 : undefined} inputMode={key === 'pincode' ? 'numeric' : undefined} pattern={key === 'pincode' ? '[1-9][0-9]{5}' : key === 'phone' ? '(\\+?91)?[6-9][0-9]{9}' : undefined} value={form[key]} onChange={event => setForm(current => ({ ...current, [key]: event.target.value }))} /></label>)}
+            <label className={styles.label}>Full delivery address<textarea rows={3} autoComplete="street-address" required minLength={10} maxLength={1000} value={form.address} onChange={event => setForm(current => ({ ...current, address: event.target.value }))} placeholder="House number, street, area and city" /></label>
+          </section>
+          <section className={styles.card}><h2><span>2</span>Order summary</h2>
+            {!items.length ? <p className={styles.empty}>Your cart is empty. <Link href="/">Browse plants</Link></p> : items.map(item => <div className={styles.line} key={JSON.stringify([item.slug, item.variant])}>{item.image && <img src={item.image} alt="" />}<div><strong>{item.title}</strong><span>{item.variant ? `${item.variant} · ` : ''}Qty: {item.qty}</span></div><strong>₹{money(Math.round(Number(item.price) * 100) * item.qty)}</strong></div>)}
+            <div className={styles.totals}><p><span>Items</span><strong>₹{money(subtotal)}</strong></p><p><span>Delivery</span><strong>{shipping === 0 ? 'FREE' : `₹${money(shipping)}`}</strong></p><p className={styles.total}><span>Total payable</span><strong>₹{money(total)}</strong></p></div>
+            <p className={styles.hint}>Free delivery on orders ₹{FREE_DELIVERY_THRESHOLD.toLocaleString('en-IN')} and above. Prices are checked again before payment.</p>
+          </section>
+          <button className={styles.pay} type="submit" disabled={!items.length || busy}><FiCreditCard aria-hidden="true" />{busy ? 'Processing…' : `Pay ₹${money(total)} with Razorpay`}</button>
+        </fieldset>
+      </form>}
+      {message && <p className={styles.notice} role="status">{message}</p>}
+      {pending && <button type="button" className={styles.statusButton} disabled={busy} onClick={checkStatus}>Check payment status</button>}
+      {testMode && <p className={styles.test}>Test mode · no real money is charged</p>}
+      <p className={styles.secure}><FiShield aria-hidden="true" />Orders are confirmed only after payment verification.</p>
     </main>
   );
 }

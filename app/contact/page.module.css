@@ -1,0 +1,13 @@
+.page { max-width: 540px; padding: 35px 18px 45px; margin: 0 auto; color: #263f2c; }
+.page h1 { margin: 0 0 12px; font-size: 27px; letter-spacing: -.6px; }
+.intro { margin: 0 0 24px; font-size: 13px; line-height: 1.7; color: #81907d; }
+.form { padding: 24px; background: #fff; border: 1px solid #e0e8dc; border-radius: 14px; }
+.form label { display: block; margin-bottom: 9px; font-size: 13px; font-weight: 600; }
+.form input, .form textarea { display: block; width: 100%; margin-bottom: 22px; padding: 12px; border: 1px solid #dce5d7; border-radius: 8px; color: #334b2b; background: #fff; font: 14px Arial, sans-serif; line-height: 1.5; }
+.form textarea { resize: vertical; }
+.form button { display: flex; align-items: center; justify-content: center; gap: 9px; width: 100%; padding: 13px 10px; border: 0; border-radius: 8px; color: #fff; background: #26784a; font: 600 13px Arial, sans-serif; cursor: pointer; }
+.form button:hover { background: #1e633c; }
+.form button svg { width: 19px; height: 19px; }
+.note { margin: 14px 0 0; text-align: center; color: #8b9685; font-size: 11px; line-height: 1.7; }
+.error { color: #ac492d; font-size: 12px; line-height: 1.5; }
+.form input:focus-visible, .form textarea:focus-visible, .form button:focus-visible { outline: 2px solid #34754b; outline-offset: 3px; }

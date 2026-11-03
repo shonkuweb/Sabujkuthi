@@ -1,3 +1,5 @@
+import { siteUrl } from "../lib/business.mjs";
+
 export default function robots() {
   return {
     rules: [
@@ -7,7 +9,7 @@ export default function robots() {
         disallow: ['/admin', '/api/'],
       },
     ],
-    sitemap: 'https://mitalinursury.com/sitemap.xml',
-    host: 'https://mitalinursury.com',
+    sitemap: `${siteUrl}/sitemap.xml`,
+    host: siteUrl,
   };
 }

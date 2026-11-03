@@ -1,0 +1,85 @@
+.section {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  margin: 10px -14px 32px;
+  padding: 48px 22px 36px;
+  background:
+    linear-gradient(to bottom, #f8f9f5 0, #f8f9f500 100px),
+    radial-gradient(ellipse at 4% 82%, #eaf0df80, transparent 42%),
+    #fdfcfb;
+  text-align: center;
+}
+.section::before, .section::after {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  top: 0;
+  width: 280px;
+  height: 190px;
+  background: url("https://pub-ce8688bc6c654bcfb99716f7c9373bcd.r2.dev/SabujKuthi/assets/category-leaves.png") left top / contain no-repeat;
+  mask-image: linear-gradient(to bottom, transparent, #000 75px);
+  pointer-events: none;
+  opacity: .7;
+}
+.section::before { left: 0; }
+.section::after { right: 0; transform: scaleX(-1); }
+.intro { position: relative; margin: 0 auto 30px; }
+.eyebrow { display: inline-flex; align-items: center; justify-content: center; gap: 9px; padding: 9px 20px; border-radius: 999px; background: #e9ece4e6; color: #293824; font-size: 13px; }
+.eyebrow svg { color: #508a26; }
+.intro h2 { margin: 14px 0 12px; font-family: Georgia, 'Times New Roman', serif; font-size: clamp(30px, 4.3vw, 56px); line-height: 1.15; font-weight: 700; letter-spacing: -1.2px; color: #111; }
+.intro p { margin: 0; font-size: 15px; color: #52594e; line-height: 1.6; }
+.grid { position: relative; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 14px; max-width: 1180px; margin: 0 auto; }
+.card { display: flex; flex-direction: column; overflow: hidden; border: 1px solid #e7e4df; border-radius: 56px 56px 36px 36px; background: #fbf8f5; color: #141a12; box-shadow: 0 5px 12px #293b1810; text-decoration: none; text-align: left; transition: transform .2s, box-shadow .2s; }
+.card:hover { transform: translateY(-4px); box-shadow: 0 9px 20px #293b181c; }
+.card:focus-visible, .cta:focus-visible { outline: 3px solid #52842d; outline-offset: 4px; }
+.image { display: grid; place-items: center; width: 100%; aspect-ratio: 1 / 1.05; overflow: hidden; background: #edf2e7; }
+.image img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.image > svg { width: 36px; height: 36px; color: #91a97b; }
+.info { display: flex; flex-direction: column; flex: 1; padding: 16px 16px 22px; min-height: 126px; }
+.info h3 { margin: 0 0 20px; font-size: 21px; font-weight: 600; line-height: 1.15; letter-spacing: -.4px; overflow-wrap: anywhere; }
+.cardBottom { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: auto; font-size: 13px; color: #55604d; }
+.cardBottom svg { width: 23px; height: 23px; color: #3a6527; flex-shrink: 0; }
+.cta { position: relative; display: inline-flex; justify-content: center; align-items: center; gap: 28px; margin-top: 28px; padding: 13px 32px; border-radius: 999px; color: #fff; background: linear-gradient(110deg, #577f25, #2e541f); text-decoration: none; font-size: 15px; }
+.cta:hover { background: #315e24; }
+.cta svg { width: 22px; height: 22px; }
+@media (min-width: 768px) { .section { margin-left: -28px; margin-right: -28px; margin-bottom: 40px; padding-left: 28px; padding-right: 28px; } }
+@media (min-width: 768px) and (max-width: 1000px) { .grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; } }
+@media (max-width: 767px) {
+  .section { padding: 34px 16px 30px; }
+  .section::before, .section::after { width: 145px; height: 100px; opacity: .45; }
+  .intro { margin-bottom: 24px; }
+  .eyebrow { padding: 7px 14px; font-size: 11px; }
+  .intro h2 { font-size: 32px; }
+  .intro p { max-width: 290px; margin: 0 auto; font-size: 12px; }
+  .grid {
+    grid-template-columns: none;
+    grid-auto-flow: column;
+    grid-auto-columns: calc((100% - 24px) / 5);
+    gap: 6px;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x proximity;
+    scrollbar-width: none;
+    padding: 6px 0 10px;
+  }
+  .grid::-webkit-scrollbar { display: none; }
+  .card { min-width: 0; border-radius: 22px 22px 12px 12px; scroll-snap-align: start; }
+  .image { aspect-ratio: 1; }
+  .image > svg { width: 20px; height: 20px; }
+  .info { min-height: 53px; padding: 7px 5px 8px; }
+  .info h3 {
+    font-size: 10px;
+    line-height: 1.25;
+    letter-spacing: 0;
+    margin-bottom: 6px;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+  }
+  .cardBottom { gap: 2px; font-size: 8px; }
+  .cardBottom svg { width: 11px; height: 11px; }
+  .cta { margin-top: 24px; padding: 12px 26px; font-size: 13px; }
+}
+@media (prefers-reduced-motion: reduce) { .card { transition: none; } }

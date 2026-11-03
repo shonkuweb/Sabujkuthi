@@ -5,14 +5,16 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: malati_app
+    container_name: sabujkuthi_app
     restart: always
     ports:
-      - "3005:3000"
+      # Map to host port (default: 3005). Change APP_PORT in your .env if 3005 is in use by another VPS app.
+      - "${APP_PORT:-3005}:3000"
     volumes:
-      # Mount the data folder so JSON files and SQLite DB persist if the container restarts
+      # Persistent SQLite volume - preserves products, categories, orders and settings
       - ./data:/data
     env_file:
       - .env
     environment:
       - DATABASE_URL=file:/data/dev.db
+      - NODE_ENV=production

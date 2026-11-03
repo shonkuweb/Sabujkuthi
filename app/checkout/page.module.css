@@ -1,0 +1,33 @@
+.page { max-width: 650px; margin: 0 auto; padding: 30px 16px 45px; color: #20352b; }
+.heading { text-align: center; margin-bottom: 26px; }
+.heading > span { display: inline-flex; align-items: center; gap: 7px; padding: 7px 12px; border-radius: 999px; color: #34724b; background: #edf5ef; font-size: 11px; }
+.heading h1 { margin: 17px 0 10px; font-size: 25px; letter-spacing: -.7px; }
+.heading p { margin: 0; color: #859080; font-size: 12px; line-height: 1.6; }
+.fields { margin: 0; padding: 0; border: 0; min-width: 0; }
+.card { margin-bottom: 20px; padding: 22px; border: 1px solid #e3eae2; border-radius: 14px; background: #fff; }
+.card h2 { display: flex; align-items: center; gap: 10px; font-size: 16px; margin: 0 0 22px; }
+.card h2 > span { display: grid; place-items: center; width: 25px; height: 25px; border-radius: 8px; background: #edf5ef; color: #34724b; font-size: 12px; }
+.label { display: block; font-size: 12px; font-weight: 600; margin-bottom: 16px; }
+.label:last-child { margin-bottom: 0; }
+.label input, .label textarea { display: block; width: 100%; margin-top: 8px; padding: 12px; border: 1px solid #dfe6dc; border-radius: 8px; background: #fff; color: #374834; font: 14px Arial, sans-serif; }
+.label textarea { resize: vertical; line-height: 1.5; }
+.line { display: flex; align-items: center; gap: 11px; padding: 14px 0; border-bottom: 1px solid #eef1eb; }
+.line img { width: 50px; height: 50px; border-radius: 9px; object-fit: cover; }
+.line > div { flex: 1; min-width: 0; }
+.line strong { font-size: 12px; line-height: 1.5; overflow-wrap: anywhere; }
+.line span { display: block; margin-top: 4px; color: #8a9585; font-size: 11px; }
+.line > strong { flex-shrink: 0; }
+.totals { margin-top: 22px; }
+.totals p { display: flex; justify-content: space-between; gap: 12px; font-size: 13px; color: #7f8a78; }
+.totals strong { color: #40553a; }
+.totals .total { margin-top: 18px; padding-top: 17px; border-top: 1px solid #e8ede4; color: #263e20; font-size: 17px; }
+.hint, .empty { color: #8b9684; font-size: 11px; line-height: 1.7; }
+.empty a { color: #34724b; }
+.pay { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; min-height: 48px; padding: 12px; border: 0; border-radius: 9px; background: #26784a; color: #fff; font-size: 14px; font-weight: 600; cursor: pointer; }
+.pay:hover { background: #1d603a; }
+.pay:disabled { background: #becbbd; cursor: default; }
+.notice { margin: 18px 0 0; padding: 13px; border-radius: 8px; background: #eff4e9; font-size: 12px; color: #536b46; line-height: 1.65; }
+.statusButton { display: block; margin: 14px auto; padding: 9px 15px; border: 1px solid #d5e2d2; border-radius: 8px; background: #fff; color: #34724b; font-size: 12px; cursor: pointer; }
+.secure { display: flex; align-items: center; justify-content: center; gap: 7px; font-size: 11px; color: #85917e; text-align: center; margin-top: 18px; line-height: 1.6; }
+.test { color: #a97824; font-size: 11px; text-align: center; }
+.page input:focus-visible, .page textarea:focus-visible, .page button:focus-visible { outline: 2px solid #34724b; outline-offset: 3px; }

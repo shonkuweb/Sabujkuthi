@@ -1,0 +1,39 @@
+.ticker {
+  overflow: hidden;
+  padding: 6px 0;
+  background: #004b23;
+  color: #fff;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.5;
+}
+.track {
+  display: flex;
+  width: max-content;
+  animation: packing-scroll 32s linear infinite;
+}
+.track span {
+  flex-shrink: 0;
+  padding-right: 64px;
+  white-space: nowrap;
+}
+.ticker:hover .track { animation-play-state: paused; }
+.accessibleText {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+@keyframes packing-scroll {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .track { animation: none; width: auto; }
+  .track span { white-space: normal; padding: 0 16px; }
+  .track span + span { display: none; }
+}

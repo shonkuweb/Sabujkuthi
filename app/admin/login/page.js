@@ -1,6 +1,8 @@
 'use client';
 
 import { useState } from 'react';
+import BusinessLogo from "../../components/BusinessLogo";
+import { business } from '../../../lib/business.mjs';
 import { useRouter } from 'next/navigation';
 
 export default function LoginPage() {
@@ -91,28 +93,14 @@ export default function LoginPage() {
       }}>
         
         <div style={{ textAlign: 'center', marginBottom: '36px' }}>
-          <div style={{ 
-            width: '64px', 
-            height: '64px', 
-            background: '#1f6b2c', 
-            borderRadius: '16px', 
-            display: 'flex', 
-            alignItems: 'center', 
-            justifyContent: 'center', 
-            margin: '0 auto 20px auto',
-            boxShadow: '0 10px 20px rgba(31, 107, 44, 0.2)'
-          }}>
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
-            </svg>
-          </div>
+          <BusinessLogo className="admin-login-logo" />
           <h1 style={{ 
             margin: 0, 
             color: '#1a1a1a', 
             fontSize: '2rem', 
             fontWeight: '800',
             letterSpacing: '-0.03em'
-          }}>Malati Admin</h1>
+          }}>{business.shortName} Admin</h1>
           <p style={{ margin: '8px 0 0 0', color: '#666', fontSize: '1.05rem' }}>Welcome back. Please enter your password.</p>
         </div>
         

@@ -1,0 +1,11 @@
+.page { max-width: 650px; margin: 0 auto; padding: 48px 20px; color: #274122; text-align: center; }
+.icon { width: 48px; height: 48px; color: #36955b; }
+.page h1 { margin: 20px 0 12px; font-size: 25px; }
+.page p { color: #839177; font-size: 13px; line-height: 1.7; }
+.receipt { display: block; font-size: 13px; margin: 20px 0; overflow-wrap: anywhere; }
+.test { display: inline-block; padding: 7px 10px; background: #fbf1dc; color: #a47b2c; border-radius: 6px; font-size: 11px; }
+.summary { margin: 25px 0; padding: 18px; border: 1px solid #e0e9da; border-radius: 12px; background: #fff; text-align: left; }
+.summary > div { display: flex; justify-content: space-between; gap: 20px; padding: 12px 0; font-size: 12px; line-height: 1.6; }
+.summary > div + div { border-top: 1px solid #edf2e8; }
+.summary strong { flex-shrink: 0; }
+.continue { display: inline-block; margin-top: 20px; padding: 12px 22px; background: #26784a; color: #fff; text-decoration: none; border-radius: 8px; font-size: 13px; }

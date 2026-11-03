@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '../../../../lib/prisma';
 import crypto from 'crypto';
+import { isAdminRequest } from '../../../../lib/admin-session.mjs';
 
 function hashPassword(password) {
   return crypto.createHash('sha256').update(password).digest('hex');
@@ -9,12 +10,12 @@ function hashPassword(password) {
 export async function POST(request) {
   try {
     // Check if the user is authenticated
-    const token = request.cookies.get('admin_token');
-    if (!token) {
+    if (!await isAdminRequest(request)) {
       return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
     }
 
     const { currentPassword, newPassword } = await request.json();
+    if (typeof currentPassword !== 'string' || typeof newPassword !== 'string' || newPassword.length < 6 || newPassword.length > 200) return NextResponse.json({ success: false, message: 'New password must be between 6 and 200 characters.' }, { status: 400 });
 
     const passwordSetting = await prisma.settings.findUnique({
       where: { key: 'admin_password' }

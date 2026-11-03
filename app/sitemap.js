@@ -1,11 +1,13 @@
 import { prisma } from '../lib/prisma';
+import { siteUrl } from '../lib/business.mjs';
 
 export default async function sitemap() {
-  const baseUrl = 'https://mitalinursury.com';
+  const baseUrl = siteUrl;
 
   let productUrls = [];
   try {
     const products = await prisma.product.findMany({
+      where: { isPublished: true, category: { is: { isVisible: true } } },
       select: {
         slug: true,
         updatedAt: true,
@@ -23,6 +25,8 @@ export default async function sitemap() {
   }
 
   const staticUrls = [
+    { url: `${baseUrl}/collection`, lastModified: new Date(), changeFrequency: 'daily', priority: 0.8 },
+    { url: `${baseUrl}/contact`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.5 },
     {
       url: baseUrl,
       lastModified: new Date(),

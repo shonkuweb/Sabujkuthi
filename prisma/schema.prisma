@@ -21,11 +21,66 @@ model Product {
   title          String
   price          String
   description    String?
+  plantCare      String?
+  deliveryReturns String?
+  deliveryNote   String?
+  deliveryPincodes String?
+  replacementInfo String?
+  deliveryInfo   String?
+  supportInfo    String?
+  packagingInfo  String?
+  soldLast24Hours Int?
+  demoMetrics    Boolean @default(true)
   image          String?
   type           String?
-  rating         Float   @default(5.0)
-  reviews        Int     @default(120)
+  rating         Float   @default(0)
+  reviews        Int     @default(0)
   adeniumOptions String? // Stored as JSON string
+  categoryId     String?
+  category       Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  oldPrice       String?
+  inStock        Boolean @default(true)
+  isPublished    Boolean @default(false)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
+
+  @@index([categoryId])
+}
+
+model Category {
+  id        String  @id @default(uuid())
+  slug      String  @unique
+  name      String
+  nameKey   String  @unique
+  products  Product[]
+  image     String  @default("")
+  isVisible Boolean @default(true)
+}
+
+model Order {
+  id                  String   @id @default(uuid())
+  orderNumber         Int?     @unique
+  receipt             String   @unique
+  checkoutTokenHash   String   @unique
+  requestHash         String
+  razorpayOrderId     String?  @unique
+  razorpayPaymentId   String?  @unique
+  status              String   @default("pending")
+  fulfillmentStatus   String   @default("New")
+  customerName        String
+  phone               String
+  email               String?
+  address             String
+  pincode             String
+  itemsJson           String
+  subtotal            Int
+  shipping            Int
+  total               Int
+  currency            String   @default("INR")
+  paymentMode         String
+  paidAt              DateTime?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@index([status, createdAt])
 }

@@ -1,9 +1,9 @@
 FROM node:20-alpine AS base
+RUN apk add --no-cache libc6-compat
 
 # Install dependencies only when needed
 FROM base AS deps
-# Check https://github.com/nodejs/docker-node/tree/b4117f9333da4138b03a546ec926ef50a31506c3#nodealpine to understand why libc6-compat might be needed.
-RUN apk add --no-cache libc6-compat python3 make g++ 
+RUN apk add --no-cache python3 make g++
 WORKDIR /app
 
 # Install dependencies
@@ -37,24 +37,29 @@ RUN adduser --system --uid 1001 nextjs
 COPY --from=builder /app/public ./public
 
 # Set the correct permission for prerender cache
-RUN mkdir .next
-RUN chown nextjs:nodejs .next
+RUN mkdir .next && chown nextjs:nodejs .next
 
 # Automatically leverage output traces to reduce image size
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
-# Manually copy Prisma and better-sqlite3 native modules because Next.js standalone often misses them
+# Copy Prisma and better-sqlite3 native modules
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules/better-sqlite3 ./node_modules/better-sqlite3
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@prisma ./node_modules/@prisma
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules/.prisma ./node_modules/.prisma
 
-# We need the sqlite database to persist or be copied over
+# Default seed database template
 COPY --from=builder --chown=nextjs:nodejs /app/dev.db ./dev.db
-# (Also copy prisma folder if migrations are needed at runtime)
 COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
 
-# Add startup script
+# Additive migration scripts
+COPY --from=builder --chown=nextjs:nodejs /app/scripts/initialize-categories.cjs ./scripts/initialize-categories.cjs
+COPY --from=builder --chown=nextjs:nodejs /app/app/data/categories.json ./app/data/categories.json
+
+# Ensure persistent data folder exists with correct permissions
+RUN mkdir -p /data && chown -R nextjs:nodejs /data
+
+# Startup script
 COPY --chown=nextjs:nodejs start.sh ./
 RUN chmod +x start.sh
 
