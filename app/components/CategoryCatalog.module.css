@@ -56,7 +56,18 @@
   box-shadow: 0 2px 6px rgba(38, 120, 74, 0.2);
 }
 
-@media (min-width: 768px) { .catalog { padding: 28px 28px 40px; } .grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; } .section { margin-bottom: 40px; } }
+@media (min-width: 768px) {
+  .catalog {
+    padding: 28px 28px 40px;
+  }
+  .grid {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 240px));
+    gap: 18px;
+  }
+  .section {
+    margin-bottom: 40px;
+  }
+}
 @media (min-width: 1024px) {
   .catalog {
     padding: 36px clamp(24px, 3.5vw, 48px) 52px;
@@ -64,8 +75,8 @@
     margin: 0 auto;
   }
   .grid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 24px;
+    grid-template-columns: repeat(auto-fill, minmax(210px, 240px));
+    gap: 22px;
   }
   .heading {
     margin-bottom: 20px;
@@ -85,5 +96,9 @@
   .catalog {
     max-width: 1720px;
     padding: 40px clamp(32px, 4vw, 64px) 64px;
+  }
+  .grid {
+    grid-template-columns: repeat(auto-fill, minmax(210px, 240px));
+    gap: 24px;
   }
 }

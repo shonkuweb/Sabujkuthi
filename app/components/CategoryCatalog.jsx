@@ -97,7 +97,7 @@ export default function CategoryCatalog({ categories, products, loading, error, 
         });
 
         if (searchQuery && !all.length) return null;
-        const items = current ? all : all.slice(0, 4);
+        const items = current ? all : all.slice(0, 8);
 
         return (
           <Fragment key={category.id}>

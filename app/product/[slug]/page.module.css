@@ -126,7 +126,7 @@
   .price > strong { font-size: 28px; }
   .buttons { gap: 14px; }
   .buttons button { min-height: 48px; font-size: 14px; }
-  .related > div { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; }
+  .related > div { grid-template-columns: repeat(auto-fill, minmax(200px, 240px)); gap: 18px; }
 }
 @media (min-width: 1440px) {
   .page { max-width: 1560px; }

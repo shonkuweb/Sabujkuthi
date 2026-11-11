@@ -39,7 +39,7 @@
 .page button:focus-visible, .page input:focus-visible { outline: 2px solid #34754b; outline-offset: 3px; }
 @media (min-width: 768px) {
   .page { padding: 28px 28px 45px; }
-  .grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; }
+  .grid { grid-template-columns: repeat(auto-fill, minmax(190px, 240px)); gap: 18px; }
   .options { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 @media (min-width: 1024px) {
@@ -140,13 +140,13 @@
     min-width: 0;
   }
   .grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(200px, 240px));
     gap: 20px;
   }
 }
 @media (min-width: 1280px) {
   .grid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(200px, 240px));
     gap: 20px;
   }
 }
@@ -155,7 +155,7 @@
     max-width: 1720px;
   }
   .grid {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(200px, 240px));
     gap: 22px;
   }
 }

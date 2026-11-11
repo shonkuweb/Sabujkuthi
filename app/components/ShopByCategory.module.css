@@ -43,13 +43,78 @@
 .cta { position: relative; display: inline-flex; justify-content: center; align-items: center; gap: 28px; margin-top: 28px; padding: 13px 32px; border-radius: 999px; color: #fff; background: linear-gradient(110deg, #577f25, #2e541f); text-decoration: none; font-size: 15px; }
 .cta:hover { background: #315e24; }
 .cta svg { width: 22px; height: 22px; }
-@media (min-width: 768px) { .section { margin-left: -28px; margin-right: -28px; margin-bottom: 40px; padding-left: 28px; padding-right: 28px; } }
-@media (min-width: 768px) and (max-width: 1000px) { .grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; } }
-@media (min-width: 1001px) {
+@media (min-width: 768px) {
+  .section {
+    margin-left: 0;
+    margin-right: 0;
+    margin-bottom: 40px;
+    padding: 44px 28px 40px;
+  }
+  .intro h2 {
+    font-size: 36px;
+    letter-spacing: -0.6px;
+  }
   .grid {
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 20px;
-    max-width: 1560px;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 18px;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  .card {
+    width: 165px;
+    max-width: 175px;
+    flex: 0 0 165px;
+    border-radius: 28px 28px 18px 18px;
+  }
+  .image {
+    aspect-ratio: 1;
+  }
+  .info {
+    min-height: 72px;
+    padding: 11px 12px 13px;
+  }
+  .info h3 {
+    font-size: 14px;
+    margin: 0 0 6px;
+    line-height: 1.25;
+    font-weight: 600;
+  }
+  .cardBottom {
+    font-size: 11.5px;
+  }
+  .cardBottom svg {
+    width: 15px;
+    height: 15px;
+  }
+  .cta {
+    margin-top: 26px;
+    padding: 11px 26px;
+    font-size: 14px;
+  }
+}
+@media (min-width: 1024px) {
+  .section {
+    padding: 52px clamp(24px, 3.5vw, 48px) 46px;
+  }
+  .grid {
+    gap: 22px;
+    max-width: 1360px;
+  }
+  .card {
+    width: 175px;
+    max-width: 185px;
+    flex: 0 0 175px;
+    border-radius: 30px 30px 20px 20px;
+  }
+  .info {
+    min-height: 76px;
+    padding: 12px 14px 14px;
+  }
+  .info h3 {
+    font-size: 14.5px;
+    margin: 0 0 7px;
   }
 }
 @media (max-width: 767px) {
