@@ -51,7 +51,7 @@ export default function StoreSettingsPanel({ active }) {
         <strong>{title}</strong><span className={styles.description}>{description}</span>
       </button>)}
     </div>
-    {current && <dialog ref={dialogRef} className={styles.modal}
+    {current && <dialog ref={dialogRef} className={`${styles.modal} ${selected === 'hero' ? styles.modalHero : ''}`}
       aria-labelledby="store-setting-title"
       onCancel={event => { event.preventDefault(); close(); }}
       onClick={event => { if (event.target === event.currentTarget) close(); }}

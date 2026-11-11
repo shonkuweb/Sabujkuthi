@@ -10,6 +10,9 @@
 .arrow { position: absolute; top: 16px; right: 16px; width: 16px; height: 16px; color: #a6b4a9; }
 .tile:focus-visible, .modalHeader button:focus-visible { outline: 2px solid #34754b; outline-offset: 3px; }
 .modal { width: min(740px, calc(100vw - 28px)); max-width: none; max-height: calc(100dvh - 40px); margin: auto; padding: 0; border: 1px solid #e1e9e2; border-radius: 17px; background: #fff; color: #20352b; box-shadow: 0 22px 80px #09291735; overflow: hidden; }
+.modalHero { width: min(1380px, calc(100vw - 28px)); max-width: 1560px; }
+@media (min-width: 1024px) { .modalHero { width: min(1560px, calc(100vw - 48px)); } }
+@media (min-width: 1440px) { .modalHero { width: calc(100vw - 64px); max-width: 1680px; } }
 .modal::backdrop { background: #0a21179c; backdrop-filter: blur(3px); }
 .modalHeader { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 22px 24px; border-bottom: 1px solid #eaf0eb; }
 .modalHeader span { font-size: 9px; letter-spacing: 1.5px; color: #97a296; font-weight: 600; }

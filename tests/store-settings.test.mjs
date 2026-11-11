@@ -61,8 +61,31 @@ test('validateHeroSettings enforces image limits and sanitizes ticker texts', ()
   assert.equal(validated.heroImages.length, 5);
   assert.equal(validated.heroImages[0], 'https://example.com/1.jpg');
   assert.equal(validated.heroImages[4], 'https://example.com/5.jpg');
+  assert.equal(validated.desktopHeroImages.length, 5);
+  assert.equal(validated.mobileHeroImages.length, 0);
   assert.equal(validated.belowTickerText, 'Special below ticker text');
   assert.equal(validated.endTickerText, 'Special end packing notice');
+});
+
+test('validateHeroSettings supports independent mobile and desktop hero banners', () => {
+  const input = {
+    mobileHeroImages: [
+      'https://example.com/m1.jpg',
+      'https://example.com/m2.jpg',
+    ],
+    desktopHeroImages: [
+      'https://example.com/d1.jpg',
+      'https://example.com/d2.jpg',
+      'https://example.com/d3.jpg',
+    ],
+  };
+
+  const validated = validateHeroSettings(input);
+  assert.equal(validated.mobileHeroImages.length, 2);
+  assert.equal(validated.mobileHeroImages[0], 'https://example.com/m1.jpg');
+  assert.equal(validated.desktopHeroImages.length, 3);
+  assert.equal(validated.desktopHeroImages[0], 'https://example.com/d1.jpg');
+  assert.equal(validated.heroImages.length, 3); // synced with desktop
 });
 
 test('prepareCheckout calculates totals with dynamic delivery settings', () => {
