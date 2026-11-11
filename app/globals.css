@@ -10,16 +10,16 @@ html,
 body {
   margin: 0;
   padding: 0;
-  background: #eef4f0;
+  background: #ffffff;
   min-height: 100%;
 }
 
 .mobile-page {
   width: 100%;
-  max-width: 1280px;
-  margin: 0 auto;
+  max-width: 100%;
+  margin: 0;
   min-height: 100vh;
-  background: #f4f9f6;
+  background: #ffffff;
   color: #222;
   position: relative;
 }
@@ -2781,11 +2781,13 @@ body {
 @media (min-width: 901px) {
   html,
   body {
-    background: #e6f0e9;
+    background: #ffffff;
   }
 
   .mobile-page {
-    margin: 0 auto;
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
     border-radius: 0;
     box-shadow: none;
     overflow: visible;
@@ -2896,8 +2898,8 @@ body {
   }
 
   .whatsapp-fab {
-    right: max(24px, calc((100vw - 1280px) / 2 + 24px));
-    bottom: 92px;
+    right: 28px;
+    bottom: 28px;
   }
 
   .bottom-nav {
@@ -3512,14 +3514,15 @@ body {
 /* Desktop Screens (>= 1024px) */
 @media (min-width: 1024px) {
   html, body {
-    background: #eef4f0;
+    background: #ffffff;
   }
 
   .mobile-page {
-    max-width: 1360px;
-    margin: 0 auto;
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
     background: #ffffff;
-    box-shadow: 0 4px 40px rgba(0, 0, 0, 0.05);
+    box-shadow: none;
   }
 
   .announcement-bar {
@@ -3549,9 +3552,9 @@ body {
   }
 
   .desktop-header-inner {
-    max-width: 1320px;
+    max-width: 1600px;
     margin: 0 auto;
-    padding: 14px 32px;
+    padding: 14px clamp(24px, 3.5vw, 48px);
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -3710,9 +3713,9 @@ body {
   }
 
   .desktop-nav-inner {
-    max-width: 1320px;
+    max-width: 1600px;
     margin: 0 auto;
-    padding: 0 32px;
+    padding: 0 clamp(24px, 3.5vw, 48px);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -3878,18 +3881,20 @@ body {
 
   /* Homepage Category Row Centering on Desktop */
   .category-row {
+    max-width: 1600px;
+    margin: 0 auto;
     justify-content: center;
     flex-wrap: wrap;
-    gap: 24px;
-    padding: 20px 32px 24px;
+    gap: 28px;
+    padding: 22px clamp(24px, 3.5vw, 48px);
     background: #ffffff;
     border-bottom: 1px solid #e8efe9;
   }
 
   /* Footer 4-Column Layout on Desktop */
   .nursery-footer-inner {
-    max-width: 1280px;
-    padding: 48px 36px 72px;
+    max-width: 1600px;
+    padding: 52px clamp(24px, 3.5vw, 48px) 72px;
   }
 
   .footer-desktop-grid {

@@ -59,16 +59,16 @@
 @media (min-width: 768px) { .catalog { padding: 28px 28px 40px; } .grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; } .section { margin-bottom: 40px; } }
 @media (min-width: 1024px) {
   .catalog {
-    padding: 36px 32px 52px;
-    max-width: 1280px;
+    padding: 36px clamp(24px, 3.5vw, 48px) 52px;
+    max-width: 1600px;
     margin: 0 auto;
   }
   .grid {
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 22px;
+    gap: 24px;
   }
   .heading {
-    margin-bottom: 18px;
+    margin-bottom: 20px;
   }
   .heading h1, .heading h2 {
     font-size: 24px;
@@ -79,5 +79,11 @@
   }
   .section {
     margin-bottom: 48px;
+  }
+}
+@media (min-width: 1440px) {
+  .catalog {
+    max-width: 1720px;
+    padding: 40px clamp(32px, 4vw, 64px) 64px;
   }
 }

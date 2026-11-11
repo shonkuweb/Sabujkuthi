@@ -149,10 +149,11 @@
 @media (min-width: 1024px) {
   .container {
     aspect-ratio: 21 / 9;
-    max-height: 420px;
+    max-height: 460px;
     border-radius: 20px;
     margin: 20px auto 32px;
     width: calc(100% - 64px);
+    max-width: 1600px;
     box-shadow: 0 8px 30px rgba(0, 0, 0, 0.07);
   }
 }
