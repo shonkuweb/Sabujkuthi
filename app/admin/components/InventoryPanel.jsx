@@ -2,7 +2,20 @@
 
 import { useEffect, useRef, useState } from "react";
 import imageCompression from "browser-image-compression";
-import { FiBox, FiCheck, FiEdit2, FiImage, FiPlus, FiTrash2, FiUpload, FiX } from "react-icons/fi";
+import {
+  FiBox,
+  FiCheck,
+  FiEdit2,
+  FiGrid,
+  FiImage,
+  FiList,
+  FiPlus,
+  FiSearch,
+  FiTag,
+  FiTrash2,
+  FiUpload,
+  FiX
+} from "react-icons/fi";
 import { useCategories } from "../../hooks/useCategories";
 import { buildCategoryTree, flattenCategoryTree } from "../../../lib/category-tree.mjs";
 import { INDIAN_STATES } from "../../../lib/indian-regions.mjs";
@@ -43,8 +56,14 @@ export default function InventoryPanel() {
   const [notice, setNotice] = useState("");
   const [saving, setSaving] = useState(false);
   const [processing, setProcessing] = useState(false);
+  const [updatingStockId, setUpdatingStockId] = useState(null);
   const [isDraggingPrimary, setIsDraggingPrimary] = useState(false);
   const [isDraggingSecondary, setIsDraggingSecondary] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCatFilter, setSelectedCatFilter] = useState("");
+  const [stockFilter, setStockFilter] = useState("all"); // 'all' | 'in_stock' | 'sold_out'
+  const [viewMode, setViewMode] = useState("grid"); // 'grid' | 'list'
+
   const fileRef = useRef(null);
   const fileRef2 = useRef(null);
   const nameRef = useRef(null);
@@ -189,7 +208,66 @@ export default function InventoryPanel() {
     }
   };
 
+  const toggleStockQuick = async (product) => {
+    setUpdatingStockId(product.id);
+    setError("");
+    try {
+      const payload = {
+        ...product,
+        inStock: !product.inStock,
+      };
+      const response = await fetch("/api/products", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Unable to update stock status.");
+      setProducts(current => current.map(p => p.id === product.id ? data.product : p));
+      setNotice(`"${product.title}" marked as ${!product.inStock ? "in stock" : "sold out"}.`);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setUpdatingStockId(null);
+    }
+  };
+
+  const formatRupee = val => {
+    const num = Number(val);
+    if (!Number.isFinite(num)) return val;
+    return num.toLocaleString("en-IN");
+  };
+
+  const getDiscountPercent = (price, oldPrice) => {
+    const numPrice = Number(price);
+    const numOld = Number(oldPrice);
+    if (!numPrice || !numOld || numOld <= numPrice) return null;
+    return Math.round(((numOld - numPrice) / numOld) * 100);
+  };
+
   const flattenedCategories = flattenCategoryTree(buildCategoryTree(categories));
+
+  // Filtered product set
+  const filteredProducts = products.filter(p => {
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim();
+      const titleMatch = p.title.toLowerCase().includes(q);
+      const catIds = Array.isArray(p.categoryIds) ? p.categoryIds : [p.categoryId].filter(Boolean);
+      const catMatch = categories.some(c => catIds.includes(c.id) && c.name.toLowerCase().includes(q));
+      if (!titleMatch && !catMatch) return false;
+    }
+    if (selectedCatFilter) {
+      const catIds = Array.isArray(p.categoryIds) ? p.categoryIds : [p.categoryId].filter(Boolean);
+      if (!catIds.includes(selectedCatFilter)) return false;
+    }
+    if (stockFilter === "in_stock" && !p.inStock) return false;
+    if (stockFilter === "sold_out" && p.inStock) return false;
+    return true;
+  });
+
+  const totalCount = products.length;
+  const inStockCount = products.filter(p => p.inStock).length;
+  const soldOutCount = products.filter(p => !p.inStock).length;
 
   return (
     <div className={styles.workspace}>
@@ -206,8 +284,15 @@ export default function InventoryPanel() {
         </button>
       </div>
 
-      {!categories.length && <p className={styles.hint}>Create a category in the Categories tab before adding products.</p>}
-      {notice && <p role="status" className={styles.success}><FiCheck aria-hidden="true" />{notice}</p>}
+      {!categories.length && (
+        <p className={styles.hint}>Create a category in the Categories tab before adding products.</p>
+      )}
+      {notice && (
+        <p role="status" className={styles.success}>
+          <FiCheck aria-hidden="true" />
+          {notice}
+        </p>
+      )}
 
       {form && (
         <form className={styles.editor} onSubmit={save} aria-label={form.id ? "Edit product" : "Add product"}>
@@ -348,40 +433,58 @@ export default function InventoryPanel() {
 
             {/* Delivery & Shipping Scope */}
             <h3 className={styles.fieldHeading}>Delivery & Shipping Scope</h3>
-            <p className={styles.hint}>Restrict delivery by region so customers outside cannot order this plant.</p>
-
             <div className={invStyles.shippingScopeSelector}>
-              {[
-                { id: "all_india", label: "🇮🇳 All Over India", desc: "Available for delivery anywhere in India" },
-                { id: "states", label: "📍 Specific States Only", desc: "Available only in selected states/UTs" },
-                { id: "pincodes", label: "📮 Specific Pincodes Only", desc: "Available only to listed 6-digit pincodes" },
-              ].map(scope => (
-                <label
-                  key={scope.id}
-                  className={`${invStyles.scopeOption} ${form.shippingScope === scope.id ? invStyles.scopeOptionActive : ""}`}
-                >
-                  <input
-                    type="radio"
-                    name="shippingScope"
-                    value={scope.id}
-                    checked={form.shippingScope === scope.id}
-                    onChange={() => change("shippingScope", scope.id)}
-                  />
-                  <div>
-                    <strong>{scope.label}</strong>
-                    <p>{scope.desc}</p>
-                  </div>
-                </label>
-              ))}
+              <label className={`${invStyles.scopeOption} ${form.shippingScope === "all_india" ? invStyles.scopeOptionActive : ""}`}>
+                <input
+                  type="radio"
+                  name="shippingScope"
+                  value="all_india"
+                  checked={form.shippingScope === "all_india"}
+                  onChange={() => change("shippingScope", "all_india")}
+                />
+                <div>
+                  <strong>All India Delivery</strong>
+                  <p>Ships to all serviceable delivery pincodes across India.</p>
+                </div>
+              </label>
+
+              <label className={`${invStyles.scopeOption} ${form.shippingScope === "states" ? invStyles.scopeOptionActive : ""}`}>
+                <input
+                  type="radio"
+                  name="shippingScope"
+                  value="states"
+                  checked={form.shippingScope === "states"}
+                  onChange={() => change("shippingScope", "states")}
+                />
+                <div>
+                  <strong>Specific States Only</strong>
+                  <p>Restricted to selected states/UTs (e.g. West Bengal, Odisha).</p>
+                </div>
+              </label>
+
+              <label className={`${invStyles.scopeOption} ${form.shippingScope === "pincodes" ? invStyles.scopeOptionActive : ""}`}>
+                <input
+                  type="radio"
+                  name="shippingScope"
+                  value="pincodes"
+                  checked={form.shippingScope === "pincodes"}
+                  onChange={() => change("shippingScope", "pincodes")}
+                />
+                <div>
+                  <strong>Specific Pincodes Only</strong>
+                  <p>Only customers with exact matching pincodes can buy.</p>
+                </div>
+              </label>
             </div>
 
             {form.shippingScope === "states" && (
               <div className={invStyles.statesPickerBox}>
-                <label className={styles.label}>Allowed Delivery States & UTs</label>
+                <span className={styles.label} style={{ marginBottom: 4 }}>Select Allowed States / Territories</span>
+                <p className={styles.hint} style={{ margin: "0 0 10px" }}>Only customers shipping to selected states will be permitted to checkout this plant.</p>
                 <div className={invStyles.statesGrid}>
                   {INDIAN_STATES.map(stateName => {
-                    const currentList = (form.deliveryStates || "").split(",").map(s => s.trim()).filter(Boolean);
-                    const isChecked = currentList.includes(stateName);
+                    const currentSelected = (form.deliveryStates || "").split(",").map(s => s.trim()).filter(Boolean);
+                    const isChecked = currentSelected.includes(stateName);
                     return (
                       <label key={stateName} className={invStyles.stateChip}>
                         <input
@@ -389,8 +492,8 @@ export default function InventoryPanel() {
                           checked={isChecked}
                           onChange={() => {
                             const next = isChecked
-                              ? currentList.filter(s => s !== stateName)
-                              : [...currentList, stateName];
+                              ? currentSelected.filter(s => s !== stateName)
+                              : [...currentSelected, stateName];
                             change("deliveryStates", next.join(", "));
                           }}
                         />
@@ -399,34 +502,23 @@ export default function InventoryPanel() {
                     );
                   })}
                 </div>
-                <p className={styles.hint}>Customers from pincodes outside these selected states will be blocked from purchasing.</p>
               </div>
             )}
 
             {form.shippingScope === "pincodes" && (
               <div className={invStyles.pincodesBox}>
-                <label className={styles.label} htmlFor="product-pincodes">Supported Delivery Pincodes</label>
-                <input
+                <label className={styles.label} htmlFor="delivery-pincodes">Allowed 6-digit Pincodes (comma-separated)</label>
+                <textarea
                   className={styles.nameInput}
-                  id="product-pincodes"
+                  id="delivery-pincodes"
+                  rows={3}
                   value={form.deliveryPincodes || ""}
-                  placeholder="e.g. 721253, 700001, 700019"
+                  placeholder="e.g. 700001, 721253, 700091"
                   onChange={event => change("deliveryPincodes", event.target.value)}
                 />
-                <p className={styles.hint}>Enter 6-digit pincodes separated by commas. Only customers matching these pincodes can purchase.</p>
+                <p className={styles.hint}>Separate multiple pincodes with commas. Customers outside these pincodes cannot place an order for this plant.</p>
               </div>
             )}
-
-            <label className={styles.label} htmlFor="product-delivery-note">Delivery availability message (optional)</label>
-            <textarea
-              className={styles.nameInput}
-              id="product-delivery-note"
-              rows={2}
-              maxLength={10000}
-              value={form.deliveryNote || ""}
-              placeholder="e.g. Dispatched within 24 hours in insulated protective packaging."
-              onChange={event => change("deliveryNote", event.target.value)}
-            />
 
             <label className={styles.label} htmlFor="product-description">Description (optional)</label>
             <textarea className={styles.nameInput} id="product-description" rows={4} maxLength={10000} value={form.description || ""} onChange={event => change("description", event.target.value)} placeholder="Tell customers about this plant" />
@@ -493,43 +585,357 @@ export default function InventoryPanel() {
         !form && <div className={styles.empty}><span className={styles.emptyIcon}><FiBox aria-hidden="true" /></span><h2>No products yet</h2><p>Add your first product and assign it to a category.</p></div>
       ) : (
         <>
-          <p className={styles.count}>{products.length} {products.length === 1 ? "product" : "products"}</p>
-          <div className={styles.grid}>
-            {products.map(product => {
-              const assignedCatIds = Array.isArray(product.categoryIds) ? product.categoryIds : [product.categoryId].filter(Boolean);
-              const assignedCats = categories.filter(c => assignedCatIds.includes(c.id));
-              const scopeLabel = product.shippingScope === "states" ? "📍 Specific States" : product.shippingScope === "pincodes" ? "📮 Pincodes" : "🇮🇳 All India";
-
-              return (
-                <article className={styles.card} key={product.id}>
-                  <div className={styles.cardImage}>
-                    {product.image ? <img src={product.image} alt={product.title} /> : <FiImage aria-hidden="true" />}
-                  </div>
-                  <div className={styles.cardDetails}>
-                    <h2>{product.title}</h2>
-                    <p className={styles.hint}>₹{product.price}</p>
-                    <div className={invStyles.cardMetaBadges}>
-                      {assignedCats.map(c => (
-                        <span key={c.id} className={invStyles.categoryPill}>{c.name}</span>
-                      ))}
-                      <span className={invStyles.shippingPill}>{scopeLabel}</span>
-                      <span className={product.inStock ? styles.visible : styles.hidden}>
-                        {product.inStock ? "In stock" : "Sold out"}
-                      </span>
-                    </div>
-                  </div>
-                  <div className={styles.cardActions}>
-                    <button type="button" className={styles.editButton} aria-label={`Edit ${product.title}`} disabled={saving || processing} onClick={() => openForm(product)}>
-                      <FiEdit2 aria-hidden="true" /><span>Edit</span>
-                    </button>
-                    <button type="button" className={styles.deleteButton} aria-label={`Delete ${product.title}`} disabled={saving || processing} onClick={() => removeProduct(product)}>
-                      <FiTrash2 aria-hidden="true" /><span>Delete</span>
-                    </button>
-                  </div>
-                </article>
-              );
-            })}
+          {/* STATS OVERVIEW */}
+          <div className={invStyles.statsBar}>
+            <div className={invStyles.statCard}>
+              <span>All Products:</span>
+              <strong>{totalCount}</strong>
+            </div>
+            <div className={invStyles.statCard}>
+              <span className={invStyles.statDotInStock} aria-hidden="true" />
+              <span>In Stock:</span>
+              <strong style={{ color: "#26784a" }}>{inStockCount}</strong>
+            </div>
+            <div className={invStyles.statCard}>
+              <span className={invStyles.statDotSoldOut} aria-hidden="true" />
+              <span>Sold Out:</span>
+              <strong style={{ color: "#dc2626" }}>{soldOutCount}</strong>
+            </div>
           </div>
+
+          {/* TOOLBAR CONTROLS: SEARCH, FILTERS & VIEW MODE */}
+          <div className={invStyles.toolbarWrap}>
+            <div className={invStyles.filterControls}>
+              {/* Search Box */}
+              <div className={invStyles.searchBox}>
+                <FiSearch aria-hidden="true" />
+                <input
+                  type="search"
+                  placeholder="Search plants or categories…"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  aria-label="Search products"
+                />
+                {searchQuery && (
+                  <button
+                    type="button"
+                    className={invStyles.clearSearchBtn}
+                    onClick={() => setSearchQuery("")}
+                    aria-label="Clear search"
+                  >
+                    <FiX />
+                  </button>
+                )}
+              </div>
+
+              {/* Category Filter */}
+              <select
+                className={invStyles.filterSelect}
+                value={selectedCatFilter}
+                onChange={(e) => setSelectedCatFilter(e.target.value)}
+                aria-label="Filter by category"
+              >
+                <option value="">All Categories ({categories.length})</option>
+                {flattenedCategories.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.depth > 0 ? "— ".repeat(c.depth) : ""}{c.name}
+                  </option>
+                ))}
+              </select>
+
+              {/* Stock Status Filter */}
+              <select
+                className={invStyles.filterSelect}
+                value={stockFilter}
+                onChange={(e) => setStockFilter(e.target.value)}
+                aria-label="Filter by stock status"
+              >
+                <option value="all">All Stock Status</option>
+                <option value="in_stock">In Stock ({inStockCount})</option>
+                <option value="sold_out">Sold Out ({soldOutCount})</option>
+              </select>
+            </div>
+
+            {/* View Mode Toggle: Grid vs List */}
+            <div className={invStyles.viewToggleGroup} role="group" aria-label="View layout switcher">
+              <button
+                type="button"
+                className={`${invStyles.viewToggleBtn} ${viewMode === "grid" ? invStyles.viewToggleBtnActive : ""}`}
+                onClick={() => setViewMode("grid")}
+                title="Grid view"
+                aria-label="Grid view"
+              >
+                <FiGrid />
+              </button>
+              <button
+                type="button"
+                className={`${invStyles.viewToggleBtn} ${viewMode === "list" ? invStyles.viewToggleBtnActive : ""}`}
+                onClick={() => setViewMode("list")}
+                title="List view"
+                aria-label="List view"
+              >
+                <FiList />
+              </button>
+            </div>
+          </div>
+
+          {/* EMPTY FILTER STATE */}
+          {filteredProducts.length === 0 ? (
+            <div className={invStyles.emptyFilterState}>
+              <span className={invStyles.emptyFilterIcon} aria-hidden="true">
+                <FiSearch />
+              </span>
+              <h3>No products found</h3>
+              <p>
+                No plants match your search criteria. Try modifying your search or clearing the active filters.
+              </p>
+              <button
+                type="button"
+                className={styles.secondary}
+                onClick={() => {
+                  setSearchQuery("");
+                  setSelectedCatFilter("");
+                  setStockFilter("all");
+                }}
+              >
+                Reset filters
+              </button>
+            </div>
+          ) : viewMode === "grid" ? (
+            /* =========================================================
+               BEAUTIFUL GRID VIEW
+               ========================================================= */
+            <div className={invStyles.productGrid} role="list" aria-label="Products catalog">
+              {filteredProducts.map((product) => {
+                const assignedCatIds = Array.isArray(product.categoryIds) ? product.categoryIds : [product.categoryId].filter(Boolean);
+                const assignedCats = categories.filter((c) => assignedCatIds.includes(c.id));
+                const scopeLabel =
+                  product.shippingScope === "states"
+                    ? "📍 Specific States"
+                    : product.shippingScope === "pincodes"
+                    ? "📮 Pincodes"
+                    : "🇮🇳 All India";
+
+                const discountPercent = getDiscountPercent(product.price, product.oldPrice);
+
+                return (
+                  <article className={invStyles.productCard} key={product.id} role="listitem">
+                    {/* Card Photo Container */}
+                    <div className={invStyles.cardImageWrap}>
+                      {product.image ? (
+                        <img src={product.image} alt={product.title} className={invStyles.cardImg} loading="lazy" />
+                      ) : (
+                        <div className={invStyles.cardImgPlaceholder}>
+                          <FiImage aria-hidden="true" />
+                        </div>
+                      )}
+
+                      {/* Stock Status Badge */}
+                      <span
+                        className={`${invStyles.badgeTopLeft} ${
+                          product.inStock ? invStyles.badgeInStock : invStyles.badgeSoldOut
+                        }`}
+                      >
+                        {product.inStock ? "● In Stock" : "✕ Sold Out"}
+                      </span>
+
+                      {/* Discount Badge */}
+                      {discountPercent !== null && (
+                        <span className={invStyles.badgeDiscount}>
+                          {discountPercent}% OFF
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Card Content */}
+                    <div className={invStyles.cardBody}>
+                      <h3 className={invStyles.cardTitle} title={product.title}>
+                        {product.title}
+                      </h3>
+
+                      {/* Pricing Row */}
+                      <div className={invStyles.cardPriceRow}>
+                        <span className={invStyles.sellingPrice}>₹{formatRupee(product.price)}</span>
+                        {product.oldPrice && Number(product.oldPrice) > Number(product.price) && (
+                          <span className={invStyles.originalPrice}>₹{formatRupee(product.oldPrice)}</span>
+                        )}
+                        {discountPercent !== null && (
+                          <span className={invStyles.savingsTag}>Save ₹{formatRupee(Number(product.oldPrice) - Number(product.price))}</span>
+                        )}
+                      </div>
+
+                      {/* Meta Pills */}
+                      <div className={invStyles.cardMetaTags}>
+                        {assignedCats.map((c) => (
+                          <span key={c.id} className={invStyles.categoryPill}>
+                            {c.name}
+                          </span>
+                        ))}
+                        <span className={invStyles.shippingPill}>{scopeLabel}</span>
+                      </div>
+                    </div>
+
+                    {/* Card Actions Footer */}
+                    <div className={invStyles.cardFooterActions}>
+                      <button
+                        type="button"
+                        className={invStyles.quickStockBtn}
+                        onClick={() => toggleStockQuick(product)}
+                        disabled={saving || processing || updatingStockId === product.id}
+                        title={`Click to mark as ${product.inStock ? "Sold Out" : "In Stock"}`}
+                        aria-label={`Toggle stock for ${product.title}`}
+                      >
+                        {updatingStockId === product.id
+                          ? "Updating…"
+                          : product.inStock
+                          ? "Mark Sold Out"
+                          : "Mark In Stock"}
+                      </button>
+
+                      <div className={invStyles.actionBtns}>
+                        <button
+                          type="button"
+                          className={invStyles.btnActionEdit}
+                          aria-label={`Edit ${product.title}`}
+                          disabled={saving || processing}
+                          onClick={() => openForm(product)}
+                        >
+                          <FiEdit2 aria-hidden="true" />
+                          <span>Edit</span>
+                        </button>
+                        <button
+                          type="button"
+                          className={invStyles.btnActionDelete}
+                          aria-label={`Delete ${product.title}`}
+                          disabled={saving || processing}
+                          onClick={() => removeProduct(product)}
+                        >
+                          <FiTrash2 aria-hidden="true" />
+                        </button>
+                      </div>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          ) : (
+            /* =========================================================
+               CLEAN TABULAR LIST VIEW
+               ========================================================= */
+            <div className={invStyles.listTableWrap}>
+              <table className={invStyles.listTable}>
+                <thead>
+                  <tr>
+                    <th>Plant</th>
+                    <th>Categories</th>
+                    <th>Price</th>
+                    <th>Stock Status</th>
+                    <th>Shipping Scope</th>
+                    <th style={{ textAlign: "right" }}>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredProducts.map((product) => {
+                    const assignedCatIds = Array.isArray(product.categoryIds) ? product.categoryIds : [product.categoryId].filter(Boolean);
+                    const assignedCats = categories.filter((c) => assignedCatIds.includes(c.id));
+                    const scopeLabel =
+                      product.shippingScope === "states"
+                        ? "📍 States"
+                        : product.shippingScope === "pincodes"
+                        ? "📮 Pincodes"
+                        : "🇮🇳 All India";
+
+                    return (
+                      <tr key={product.id}>
+                        <td>
+                          <div className={invStyles.tableTitleCol}>
+                            <div className={invStyles.tableThumb}>
+                              {product.image ? (
+                                <img src={product.image} alt={product.title} />
+                              ) : (
+                                <FiImage aria-hidden="true" />
+                              )}
+                            </div>
+                            <div className={invStyles.tableTitleText}>
+                              <strong>{product.title}</strong>
+                            </div>
+                          </div>
+                        </td>
+                        <td>
+                          <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+                            {assignedCats.map((c) => (
+                              <span key={c.id} className={invStyles.categoryPill}>
+                                {c.name}
+                              </span>
+                            ))}
+                          </div>
+                        </td>
+                        <td>
+                          <div>
+                            <strong style={{ color: "#1a4d32", fontSize: 14 }}>
+                              ₹{formatRupee(product.price)}
+                            </strong>
+                            {product.oldPrice && (
+                              <div style={{ fontSize: 11, color: "#8a968f", textDecoration: "line-through" }}>
+                                ₹{formatRupee(product.oldPrice)}
+                              </div>
+                            )}
+                          </div>
+                        </td>
+                        <td>
+                          <button
+                            type="button"
+                            className={invStyles.quickStockBtn}
+                            onClick={() => toggleStockQuick(product)}
+                            disabled={saving || processing || updatingStockId === product.id}
+                            style={{ fontWeight: 600 }}
+                          >
+                            <span
+                              style={{
+                                display: "inline-block",
+                                width: 8,
+                                height: 8,
+                                borderRadius: "50%",
+                                background: product.inStock ? "#26784a" : "#dc2626",
+                                marginRight: 4,
+                              }}
+                            />
+                            {product.inStock ? "In Stock" : "Sold Out"}
+                          </button>
+                        </td>
+                        <td>
+                          <span className={invStyles.shippingPill}>{scopeLabel}</span>
+                        </td>
+                        <td style={{ textAlign: "right" }}>
+                          <div style={{ display: "inline-flex", gap: 6 }}>
+                            <button
+                              type="button"
+                              className={invStyles.btnActionEdit}
+                              onClick={() => openForm(product)}
+                              disabled={saving || processing}
+                              aria-label={`Edit ${product.title}`}
+                            >
+                              <FiEdit2 aria-hidden="true" />
+                              <span>Edit</span>
+                            </button>
+                            <button
+                              type="button"
+                              className={invStyles.btnActionDelete}
+                              onClick={() => removeProduct(product)}
+                              disabled={saving || processing}
+                              aria-label={`Delete ${product.title}`}
+                            >
+                              <FiTrash2 aria-hidden="true" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
         </>
       )}
     </div>
