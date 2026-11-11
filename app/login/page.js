@@ -2,9 +2,10 @@
 
 import { Suspense, useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { FiEye, FiEyeOff, FiLock, FiPhone, FiUser, FiArrowRight, FiCheckCircle, FiAlertCircle } from "react-icons/fi";
+import { FiEye, FiEyeOff, FiLock, FiPhone, FiUser, FiArrowRight, FiCheckCircle, FiAlertCircle, FiMapPin } from "react-icons/fi";
 import { FaLeaf } from "react-icons/fa";
 import { useCustomer } from "../context/CustomerContext";
+import { INDIAN_STATES, getStateFromPincode } from "../../lib/indian-regions.mjs";
 import styles from "./page.module.css";
 
 function LoginForm() {
@@ -21,10 +22,23 @@ function LoginForm() {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
+  const [state, setState] = useState("");
+  const [pincode, setPincode] = useState("");
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+
+  const handlePincodeChange = (e) => {
+    const val = e.target.value.replace(/\D/g, "").slice(0, 6);
+    setPincode(val);
+    if (val.length === 6) {
+      const detected = getStateFromPincode(val);
+      if (detected) {
+        setState(detected);
+      }
+    }
+  };
 
   useEffect(() => {
     if (searchParams.get("mode") === "signup") {
@@ -57,11 +71,24 @@ function LoginForm() {
       return;
     }
 
+    if (mode === "signup") {
+      const cleanPincode = pincode.trim().replace(/\D/g, "");
+      if (!cleanPincode || cleanPincode.length !== 6 || !/^[1-9][0-9]{5}$/.test(cleanPincode)) {
+        setError("Please enter a valid 6-digit delivery pincode.");
+        return;
+      }
+      if (!state) {
+        setError("Please select your delivery state.");
+        return;
+      }
+    }
+
     setLoading(true);
 
     try {
       if (mode === "signup") {
-        const res = await signup(cleanPhone, password, name.trim());
+        const cleanPincode = pincode.trim().replace(/\D/g, "");
+        const res = await signup(cleanPhone, password, name.trim(), state, cleanPincode);
         if (res.success) {
           setSuccess("Account created successfully! Redirecting...");
           setTimeout(() => {
@@ -213,6 +240,60 @@ function LoginForm() {
               </button>
             </div>
           </div>
+
+          {mode === "signup" && (
+            <>
+              <div className={styles.field}>
+                <label htmlFor="customer-pincode" className={styles.label}>
+                  Delivery Pincode <span style={{ color: '#e11d48' }}>*</span>
+                </label>
+                <div className={styles.inputWrap}>
+                  <input
+                    id="customer-pincode"
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="6-digit PIN code (e.g. 721253)"
+                    maxLength={6}
+                    pattern="[1-9][0-9]{5}"
+                    value={pincode}
+                    onChange={handlePincodeChange}
+                    className={styles.input}
+                    autoComplete="postal-code"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className={styles.field}>
+                <label htmlFor="customer-state" className={styles.label}>
+                  State / Region <span style={{ color: '#e11d48' }}>*</span>
+                </label>
+                <div className={styles.inputWrap}>
+                  <select
+                    id="customer-state"
+                    value={state}
+                    onChange={(e) => setState(e.target.value)}
+                    className={styles.input}
+                    required
+                    style={{ cursor: 'pointer', background: '#fff' }}
+                  >
+                    <option value="">-- Select Your State --</option>
+                    {INDIAN_STATES.map((st) => (
+                      <option key={st} value={st}>
+                        {st}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                {state && pincode.length === 6 && (
+                  <p style={{ fontSize: '0.8rem', color: '#15803d', margin: '0.35rem 0 0', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                    <FiMapPin />
+                    <span>Selected for {pincode}, {state} · Used to verify plant delivery</span>
+                  </p>
+                )}
+              </div>
+            </>
+          )}
 
           <button
             type="submit"

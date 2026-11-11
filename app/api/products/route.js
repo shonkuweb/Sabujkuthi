@@ -11,7 +11,13 @@ const money = value => typeof value === 'string' && /^\d+(\.\d{1,2})?$/.test(val
 function publicProduct(product) {
   let adeniumOptions = null;
   try { adeniumOptions = product.adeniumOptions ? JSON.parse(product.adeniumOptions) : null; } catch {}
-  return { ...product, adeniumOptions };
+  let categoryIds = [];
+  try { categoryIds = product.categoryIds ? JSON.parse(product.categoryIds) : []; } catch {}
+  if (!Array.isArray(categoryIds)) categoryIds = [];
+  if (!categoryIds.length && product.categoryId) {
+    categoryIds = [product.categoryId];
+  }
+  return { ...product, adeniumOptions, categoryIds };
 }
 
 export async function GET(request) {
@@ -36,7 +42,10 @@ async function save(request, update) {
   if (typeof data.title !== 'string' || !data.title.trim() || data.title.trim().length > 120) return NextResponse.json({ error: 'Enter a product name between 1 and 120 characters.' }, { status: 400 });
   if (!money(String(data.price ?? ''))) return NextResponse.json({ error: 'Enter a valid price with up to two decimal places.' }, { status: 400 });
   if (data.oldPrice != null && data.oldPrice !== '' && (!money(String(data.oldPrice)) || Number(data.oldPrice) <= Number(data.price))) return NextResponse.json({ error: 'Original price must be greater than the selling price.' }, { status: 400 });
-  if (typeof data.categoryId !== 'string' || !data.categoryId) return NextResponse.json({ error: 'Choose a category.' }, { status: 400 });
+  let categoryIds = Array.isArray(data.categoryIds)
+    ? data.categoryIds.map(String).filter(Boolean)
+    : data.categoryId ? [String(data.categoryId).trim()].filter(Boolean) : [];
+  if (!categoryIds.length) return NextResponse.json({ error: 'Choose at least one category.' }, { status: 400 });
   if (data.inStock != null && typeof data.inStock !== 'boolean') return NextResponse.json({ error: 'Invalid stock status.' }, { status: 400 });
   if (data.isPublished != null && typeof data.isPublished !== 'boolean') return NextResponse.json({ error: 'Invalid publication status.' }, { status: 400 });
   if (data.description != null && (typeof data.description !== 'string' || data.description.length > 10000)) return NextResponse.json({ error: 'Description must be under 10,000 characters.' }, { status: 400 });
@@ -50,7 +59,10 @@ async function save(request, update) {
   if (data.soldLast24Hours != null && data.soldLast24Hours !== '' && (!Number.isInteger(Number(data.soldLast24Hours)) || Number(data.soldLast24Hours) < 0 || Number(data.soldLast24Hours) > 1000000)) return NextResponse.json({ error: 'Enter a valid sold count, or leave it blank.' }, { status: 400 });
   if (data.demoMetrics != null && typeof data.demoMetrics !== 'boolean') return NextResponse.json({ error: 'Invalid demo statistics setting.' }, { status: 400 });
   try {
-    if (!await prisma.category.findUnique({ where: { id: data.categoryId } })) return NextResponse.json({ error: 'This category no longer exists. Choose another category.' }, { status: 400 });
+    const validCategories = await prisma.category.findMany({ where: { id: { in: categoryIds } } });
+    if (!validCategories.length) return NextResponse.json({ error: 'This category no longer exists. Choose another category.' }, { status: 400 });
+    categoryIds = validCategories.map(c => c.id);
+    const primaryCategoryId = data.categoryId && categoryIds.includes(data.categoryId) ? data.categoryId : categoryIds[0];
     const existing = update && typeof data.id === 'string' ? await prisma.product.findUnique({ where: { id: data.id } }) : null;
     if (update && !existing) return NextResponse.json({ error: 'Product not found.' }, { status: 404 });
     const id = existing?.id || randomUUID();
@@ -72,8 +84,18 @@ async function save(request, update) {
         console.warn('R2 upload failed for image2, preserving provided image:', err);
       }
     }
+    const shippingScope = ['all_india', 'states', 'pincodes'].includes(data.shippingScope) ? data.shippingScope : 'all_india';
+    const deliveryStates = typeof data.deliveryStates === 'string' ? data.deliveryStates.trim() || null : null;
+    const deliveryPincodes = typeof data.deliveryPincodes === 'string' ? data.deliveryPincodes.trim() || null : null;
+
     const fields = {
-      title, categoryId: data.categoryId, price: String(Number(data.price)),
+      title,
+      categoryId: primaryCategoryId,
+      categoryIds: JSON.stringify(categoryIds),
+      shippingScope,
+      deliveryStates,
+      deliveryPincodes,
+      price: String(Number(data.price)),
       oldPrice: data.oldPrice ? String(Number(data.oldPrice)) : null,
       description: data.description?.trim() || null, image: imageUrl, image2: imageUrl2,
       inStock: data.inStock !== false, isPublished: data.isPublished !== false,
@@ -86,6 +108,10 @@ async function save(request, update) {
     const product = update
       ? await prisma.product.update({ where: { id }, data: fields })
       : await prisma.product.create({ data: { id, slug: `${baseSlug}-${id.slice(0, 8)}`, rating: 0, reviews: 0, ...fields } });
+    await prisma.productCategory.deleteMany({ where: { productId: id } });
+    await prisma.productCategory.createMany({
+      data: categoryIds.map(catId => ({ productId: id, categoryId: catId })),
+    });
     return NextResponse.json({ product: publicProduct(product) }, { status: update ? 200 : 201 });
   } catch {
     return NextResponse.json({ error: 'Unable to save product. Please try again.' }, { status: 500 });

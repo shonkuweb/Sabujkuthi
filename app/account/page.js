@@ -7,6 +7,7 @@ import {
   FiArrowRight,
   FiCheckCircle,
   FiLogOut,
+  FiMapPin,
   FiPackage,
   FiPhone,
   FiShoppingBag,
@@ -89,6 +90,11 @@ export default function AccountPage() {
             <p className={styles.phone}>
               <FiPhone /> +91 {customer.phone}
             </p>
+            {customer.pincode && (
+              <p className={styles.phone} style={{ marginTop: '0.2rem', opacity: 0.9 }}>
+                <FiMapPin /> {customer.pincode}{customer.state ? `, ${customer.state}` : ''}
+              </p>
+            )}
           </div>
         </div>
 

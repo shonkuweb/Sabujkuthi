@@ -65,4 +65,15 @@
 .avatar svg { width: 22px; height: 22px; }
 .name { display: block; color: #24553c; font-size: 14px; font-weight: 600; }
 .caption { display: block; margin-top: 4px; color: #7f897c; font-size: 12px; }
-@media (min-width: 768px) { .section { padding: 50px 28px 36px; } .section h2 { font-size: 30px; } .section::before, .section::after { width: 240px; height: 165px; } }
+@media (min-width: 768px) {
+  .section { padding: 50px 28px 36px; }
+  .section h2 { font-size: 30px; }
+  .section::before, .section::after { width: 240px; height: 165px; }
+  .card {
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 14px 30px rgba(35, 76, 42, 0.1);
+  }
+}

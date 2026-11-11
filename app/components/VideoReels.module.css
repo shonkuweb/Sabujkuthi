@@ -22,4 +22,14 @@
 .error { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 18px; background: #183b22e8; color: #fff; text-align: center; font-size: 12px; line-height: 1.6; }
 .error a { color: #fff; text-underline-offset: 3px; }
 .section button:focus-visible, .section a:focus-visible, .track:focus-visible { outline: 2px solid #5a8b42; outline-offset: 3px; }
-@media (min-width: 768px) { .section { padding: 32px 28px; } .track { gap: 20px; } }
+@media (min-width: 768px) {
+  .section { padding: 40px 32px 44px; }
+  .track { gap: 24px; }
+  .section h2 { font-size: 24px; }
+  .card {
+    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .card:hover {
+    transform: translateY(-4px);
+  }
+}

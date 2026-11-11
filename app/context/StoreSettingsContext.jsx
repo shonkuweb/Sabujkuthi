@@ -3,10 +3,12 @@
 import { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { defaultHeroSettings } from "../../lib/hero-settings.mjs";
 import { defaultDeliverySettings } from "../../lib/delivery-settings.mjs";
+import { DEFAULT_OFFERS_SETTINGS } from "../../lib/discounts.mjs";
 
 const StoreSettingsContext = createContext({
   heroSettings: defaultHeroSettings,
   deliverySettings: defaultDeliverySettings,
+  offersSettings: DEFAULT_OFFERS_SETTINGS,
   loading: false,
   refresh: async () => {},
 });
@@ -14,13 +16,15 @@ const StoreSettingsContext = createContext({
 export function StoreSettingsProvider({ children }) {
   const [heroSettings, setHeroSettings] = useState(defaultHeroSettings);
   const [deliverySettings, setDeliverySettings] = useState(defaultDeliverySettings);
+  const [offersSettings, setOffersSettings] = useState(DEFAULT_OFFERS_SETTINGS);
   const [loading, setLoading] = useState(true);
 
   const refresh = useCallback(async () => {
     try {
-      const [heroRes, deliveryRes] = await Promise.all([
+      const [heroRes, deliveryRes, offersRes] = await Promise.all([
         fetch("/api/store-settings/hero", { cache: "no-store" }),
         fetch("/api/store-settings/delivery", { cache: "no-store" }),
+        fetch("/api/store-settings/offers", { cache: "no-store" }),
       ]);
       if (heroRes.ok) {
         const heroData = await heroRes.json();
@@ -29,6 +33,10 @@ export function StoreSettingsProvider({ children }) {
       if (deliveryRes.ok) {
         const deliveryData = await deliveryRes.json();
         setDeliverySettings(deliveryData);
+      }
+      if (offersRes.ok) {
+        const offersData = await offersRes.json();
+        setOffersSettings(offersData);
       }
     } catch (err) {
       console.warn("Could not load store settings:", err);
@@ -61,7 +69,7 @@ export function StoreSettingsProvider({ children }) {
   }, [refresh]);
 
   return (
-    <StoreSettingsContext.Provider value={{ heroSettings, deliverySettings, loading, refresh }}>
+    <StoreSettingsContext.Provider value={{ heroSettings, deliverySettings, offersSettings, loading, refresh }}>
       {children}
     </StoreSettingsContext.Provider>
   );

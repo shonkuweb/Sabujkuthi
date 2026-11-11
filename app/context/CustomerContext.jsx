@@ -46,11 +46,11 @@ export function CustomerProvider({ children }) {
     return { success: false, message: data.message || 'Login failed' };
   };
 
-  const signup = async (phone, password, name) => {
+  const signup = async (phone, password, name, state, pincode) => {
     const res = await fetch('/api/customer/auth/signup', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ phone, password, name })
+      body: JSON.stringify({ phone, password, name, state, pincode })
     });
     const data = await res.json();
     if (res.ok && data.success && data.customer) {

@@ -6,7 +6,7 @@ import { createCustomerSession } from '../../../../../lib/customer-session.mjs';
 export async function POST(request) {
   try {
     const body = await request.json();
-    const { name, password } = body;
+    const { name, password, state, pincode } = body;
     const rawPhone = body.phone;
 
     const phone = normalizePhone(rawPhone);
@@ -16,6 +16,16 @@ export async function POST(request) {
 
     if (typeof password !== 'string' || password.length < 6) {
       return NextResponse.json({ success: false, message: 'Password must be at least 6 characters long.' }, { status: 400 });
+    }
+
+    const cleanPincode = typeof pincode === 'string' ? pincode.trim() : '';
+    if (!/^[1-9][0-9]{5}$/.test(cleanPincode)) {
+      return NextResponse.json({ success: false, message: 'Please enter a valid 6-digit delivery pincode.' }, { status: 400 });
+    }
+
+    const cleanState = typeof state === 'string' ? state.trim() : '';
+    if (!cleanState || cleanState.length < 2) {
+      return NextResponse.json({ success: false, message: 'Please select your state.' }, { status: 400 });
     }
 
     const cleanName = typeof name === 'string' ? name.trim().slice(0, 100) : '';
@@ -38,6 +48,8 @@ export async function POST(request) {
         phone,
         passwordHash,
         name: cleanName || null,
+        state: cleanState,
+        pincode: cleanPincode,
       }
     });
 
@@ -45,6 +57,8 @@ export async function POST(request) {
       id: customer.id,
       phone: customer.phone,
       name: customer.name || '',
+      state: customer.state || '',
+      pincode: customer.pincode || '',
     });
 
     const response = NextResponse.json({
@@ -54,6 +68,8 @@ export async function POST(request) {
         id: customer.id,
         phone: customer.phone,
         name: customer.name || '',
+        state: customer.state || '',
+        pincode: customer.pincode || '',
       }
     }, { status: 201 });
 

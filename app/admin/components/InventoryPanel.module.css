@@ -1,0 +1,227 @@
+.categoryTreeBox {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid #dce5df;
+  border-radius: 10px;
+  background: #ffffff;
+  max-height: 280px;
+  overflow-y: auto;
+  margin-bottom: 24px;
+}
+
+.categoryOptionRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 9px 14px;
+  border-bottom: 1px solid #f0f4f1;
+  transition: background 0.15s ease;
+}
+
+.categoryOptionRow:last-child {
+  border-bottom: none;
+}
+
+.categoryOptionRow:hover {
+  background: #f7faf8;
+}
+
+.categoryOptionRowSelected {
+  background: #f0f8f3;
+}
+
+.categoryCheckboxLabel {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13.5px;
+  color: #21352a;
+  cursor: pointer;
+  flex: 1;
+}
+
+.categoryCheckboxLabel input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: #26784a;
+  cursor: pointer;
+}
+
+.parentCatName {
+  font-weight: 600;
+  color: #1a3224;
+}
+
+.subCatName {
+  font-weight: 500;
+  color: #385141;
+}
+
+.treeIndicator {
+  color: #26784a;
+  font-weight: 700;
+}
+
+.hiddenNotice {
+  color: #92a096;
+  font-size: 11px;
+}
+
+.primaryBadgeBtn {
+  padding: 3px 8px;
+  border: 1px solid #d1ded6;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #556c5e;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.primaryBadgeBtn:hover {
+  background: #eaf4ee;
+  color: #175e37;
+  border-color: #b3d7c0;
+}
+
+.isPrimaryActive {
+  background: #26784a;
+  color: #ffffff;
+  border-color: #26784a;
+  font-weight: 600;
+}
+
+/* Shipping Scope Selector */
+.shippingScopeSelector {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.scopeOption {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1.5px solid #dce5df;
+  border-radius: 10px;
+  background: #ffffff;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.scopeOption input[type="radio"] {
+  margin-top: 3px;
+  accent-color: #26784a;
+}
+
+.scopeOption strong {
+  display: block;
+  font-size: 13px;
+  color: #1b3325;
+  margin-bottom: 2px;
+}
+
+.scopeOption p {
+  margin: 0;
+  font-size: 11px;
+  color: #728479;
+  line-height: 1.4;
+}
+
+.scopeOption:hover {
+  border-color: #b7d6c2;
+  background: #fbfdfc;
+}
+
+.scopeOptionActive {
+  border-color: #26784a;
+  background: #f2f9f5;
+  box-shadow: 0 2px 8px rgba(38, 120, 74, 0.08);
+}
+
+/* States Picker */
+.statesPickerBox {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+  background: #f7faf8;
+  border: 1px solid #dce5df;
+  border-radius: 10px;
+  margin-bottom: 20px;
+}
+
+.statesGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  max-height: 240px;
+  overflow-y: auto;
+  padding: 6px;
+  background: #ffffff;
+  border: 1px solid #e1e9e3;
+  border-radius: 8px;
+}
+
+.stateChip {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 8px;
+  font-size: 12px;
+  color: #2d4234;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: background 0.15s ease;
+}
+
+.stateChip:hover {
+  background: #f0f6f2;
+}
+
+.stateChip input[type="checkbox"] {
+  accent-color: #26784a;
+}
+
+.pincodesBox {
+  margin-bottom: 20px;
+}
+
+/* Product Card Badges */
+.cardMetaBadges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.categoryPill {
+  display: inline-flex;
+  padding: 3px 7px;
+  border-radius: 5px;
+  background: #edf7f1;
+  color: #1c5e39;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.shippingPill {
+  display: inline-flex;
+  padding: 3px 7px;
+  border-radius: 5px;
+  background: #eef2ff;
+  color: #3730a3;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+@media (max-width: 768px) {
+  .shippingScopeSelector {
+    grid-template-columns: 1fr;
+  }
+  .statesGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

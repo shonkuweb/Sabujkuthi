@@ -3494,3 +3494,424 @@ body {
     padding-bottom: calc(88px + env(safe-area-inset-bottom, 0px));
   }
 }
+
+/* --- Responsive Desktop Enhancement Layer --- */
+/* Default (Mobile / Tablet < 1024px) */
+.desktop-header {
+  display: none !important;
+}
+
+.desktop-nav-bar {
+  display: none !important;
+}
+
+.footer-desktop-grid {
+  display: block;
+}
+
+/* Desktop Screens (>= 1024px) */
+@media (min-width: 1024px) {
+  html, body {
+    background: #eef4f0;
+  }
+
+  .mobile-page {
+    max-width: 1360px;
+    margin: 0 auto;
+    background: #ffffff;
+    box-shadow: 0 4px 40px rgba(0, 0, 0, 0.05);
+  }
+
+  .announcement-bar {
+    padding: 10px 32px;
+    font-size: 14px;
+    letter-spacing: 0.2px;
+  }
+
+  /* Hide mobile header and search row */
+  .mobile-header {
+    display: none !important;
+  }
+
+  .mobile-search-wrap {
+    display: none !important;
+  }
+
+  /* Main Desktop Sticky Header */
+  .desktop-header {
+    display: block !important;
+    background: #ffffff;
+    border-bottom: 1px solid #e2ebe4;
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    box-shadow: 0 2px 14px rgba(0, 0, 0, 0.03);
+  }
+
+  .desktop-header-inner {
+    max-width: 1320px;
+    margin: 0 auto;
+    padding: 14px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 32px;
+  }
+
+  .desktop-logo-link {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+    text-decoration: none;
+  }
+
+  .desktop-store-logo {
+    height: 48px;
+    width: auto;
+    max-width: 220px;
+    object-fit: contain;
+    mix-blend-mode: multiply;
+  }
+
+  /* Desktop Search Bar */
+  .desktop-search-form {
+    flex: 1;
+    max-width: 620px;
+    margin: 0 auto;
+  }
+
+  .desktop-search-box {
+    display: flex;
+    align-items: center;
+    border: 2px solid #26784a;
+    border-radius: 999px;
+    padding: 3px 5px 3px 18px;
+    background: #ffffff;
+    transition: box-shadow 0.2s, border-color 0.2s;
+  }
+
+  .desktop-search-box:focus-within {
+    border-color: #1a5c36;
+    box-shadow: 0 0 0 3px rgba(38, 120, 74, 0.18);
+  }
+
+  .desktop-search-icon {
+    color: #6e7f72;
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+  }
+
+  .desktop-search-box input {
+    flex: 1;
+    min-width: 0;
+    border: 0;
+    outline: none;
+    background: transparent;
+    padding: 8px 12px;
+    font-size: 15px;
+    color: #222222;
+    font-family: inherit;
+  }
+
+  .desktop-search-box input::placeholder {
+    color: #839185;
+  }
+
+  .desktop-search-btn {
+    background: #26784a;
+    color: #ffffff;
+    border: 0;
+    border-radius: 999px;
+    padding: 9px 22px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.15s;
+    font-family: inherit;
+  }
+
+  .desktop-search-btn:hover {
+    background: #1b5e38;
+  }
+
+  /* Desktop Header Quick Actions */
+  .desktop-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+  }
+
+  .desktop-header-action-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    border-radius: 8px;
+    color: #233e28;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 600;
+    background: transparent;
+    border: 0;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    font-family: inherit;
+  }
+
+  .desktop-header-action-item:hover {
+    background: #eef6f0;
+    color: #185a2d;
+  }
+
+  .desktop-action-icon {
+    width: 20px;
+    height: 20px;
+    color: #26784a;
+  }
+
+  .desktop-action-label {
+    white-space: nowrap;
+  }
+
+  .desktop-cart-icon-wrap,
+  .desktop-user-icon-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .desktop-cart-badge {
+    position: absolute;
+    top: -8px;
+    right: -10px;
+    background: #e91e8c;
+    color: #ffffff;
+    font-size: 11px;
+    font-weight: 700;
+    border-radius: 999px;
+    min-width: 18px;
+    height: 18px;
+    display: grid;
+    place-items: center;
+    padding: 0 4px;
+    box-shadow: 0 2px 6px rgba(233, 30, 140, 0.35);
+  }
+
+  /* Desktop Sub-Navigation Bar */
+  .desktop-nav-bar {
+    display: block !important;
+    background: #f8fbf9;
+    border-bottom: 1px solid #e1ebe3;
+    position: relative;
+    z-index: 40;
+  }
+
+  .desktop-nav-inner {
+    max-width: 1320px;
+    margin: 0 auto;
+    padding: 0 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 48px;
+  }
+
+  .desktop-nav-links {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+  }
+
+  .desktop-nav-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #2e4a33;
+    text-decoration: none;
+    background: transparent;
+    border: 0;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    font-family: inherit;
+  }
+
+  .desktop-nav-link:hover,
+  .desktop-nav-link.active {
+    background: #e6f2e9;
+    color: #175429;
+  }
+
+  .desktop-nav-icon {
+    width: 16px;
+    height: 16px;
+    color: #3b7c4d;
+  }
+
+  /* Desktop Dropdown for Categories */
+  .desktop-nav-dropdown {
+    position: relative;
+  }
+
+  .desktop-dropdown-chevron {
+    width: 14px;
+    height: 14px;
+    color: #627b68;
+    transition: transform 0.2s ease;
+  }
+
+  .desktop-nav-dropdown:hover .desktop-dropdown-chevron,
+  .desktop-nav-dropdown:focus-within .desktop-dropdown-chevron {
+    transform: rotate(180deg);
+  }
+
+  .desktop-nav-dropdown-menu {
+    display: none;
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    min-width: 360px;
+    max-width: 480px;
+    background: #ffffff;
+    border: 1px solid #dfe7df;
+    border-radius: 14px;
+    padding: 14px;
+    box-shadow: 0 12px 36px rgba(18, 59, 27, 0.14);
+    z-index: 100;
+    animation: dropdown-fade-in 0.15s ease-out;
+  }
+
+  .desktop-nav-dropdown:hover .desktop-nav-dropdown-menu,
+  .desktop-nav-dropdown:focus-within .desktop-nav-dropdown-menu {
+    display: block;
+  }
+
+  @keyframes dropdown-fade-in {
+    from {
+      opacity: 0;
+      transform: translateY(-4px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .dropdown-categories-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .dropdown-category-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 12px;
+    border-radius: 8px;
+    text-decoration: none;
+    color: #223826;
+    font-size: 13px;
+    font-weight: 500;
+    transition: background 0.15s;
+  }
+
+  .dropdown-category-item:hover {
+    background: #f0f7f2;
+    color: #185a2d;
+  }
+
+  .dropdown-cat-dot {
+    font-size: 13px;
+    flex-shrink: 0;
+  }
+
+  .dropdown-cat-name {
+    flex: 1;
+    overflow-wrap: anywhere;
+  }
+
+  .dropdown-cat-arrow {
+    width: 14px;
+    height: 14px;
+    color: #8ea593;
+  }
+
+  .dropdown-view-all {
+    grid-column: 1 / -1;
+    border-top: 1px solid #edf2ee;
+    margin-top: 6px;
+    padding-top: 10px;
+    color: #26784a;
+    font-weight: 600;
+  }
+
+  .desktop-nav-support-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: #185a2d;
+    text-decoration: none;
+    padding: 6px 14px;
+    border-radius: 20px;
+    background: #e8f4ec;
+    transition: background 0.15s;
+  }
+
+  .desktop-nav-support-link:hover {
+    background: #d6ede0;
+  }
+
+  .desktop-whatsapp-icon {
+    color: #25d366;
+    width: 16px;
+    height: 16px;
+  }
+
+  /* Homepage Category Row Centering on Desktop */
+  .category-row {
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 24px;
+    padding: 20px 32px 24px;
+    background: #ffffff;
+    border-bottom: 1px solid #e8efe9;
+  }
+
+  /* Footer 4-Column Layout on Desktop */
+  .nursery-footer-inner {
+    max-width: 1280px;
+    padding: 48px 36px 72px;
+  }
+
+  .footer-desktop-grid {
+    display: grid;
+    grid-template-columns: 1.2fr 1.6fr 1.1fr 1.3fr;
+    gap: 40px;
+    align-items: flex-start;
+    border-bottom: 1px solid #567c34;
+    padding-bottom: 36px;
+  }
+
+  .footer-link-columns {
+    border-bottom: none;
+    padding-bottom: 0;
+    gap: 36px;
+  }
+
+  .footer-contact {
+    padding-top: 0;
+  }
+
+  .footer-newsletter {
+    margin-top: 0;
+  }
+}

@@ -9,7 +9,75 @@
 .message h1 { font-size: 22px; }
 .message a { color: #26784a; }
 .empty { padding: 24px 15px; background: #fff; border: 1px solid #e9eee7; border-radius: 10px; font-size: 13px; color: #869083; text-align: center; }
-.breadcrumbs { display: flex; gap: 10px; font-size: 12px; color: #859080; margin-bottom: 24px; }
-.breadcrumbs a { color: #3b713f; text-decoration: none; }
+.breadcrumbs { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #859080; margin-bottom: 20px; flex-wrap: wrap; }
+.breadcrumbs a { color: #3b713f; text-decoration: none; font-weight: 500; }
+.breadcrumbs a:hover { text-decoration: underline; }
 .count { color: #88917f; font-size: 12px; margin: -4px 0 18px; }
+
+/* Subcategory Pills Bar */
+.subcatBar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 4px 0 16px;
+  margin-bottom: 12px;
+  scrollbar-width: none;
+}
+.subcatBar::-webkit-scrollbar {
+  display: none;
+}
+.subcatPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border: 1px solid #dce5df;
+  border-radius: 20px;
+  background: #ffffff;
+  color: #3b5042;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+.subcatPill:hover {
+  background: #f0f7f3;
+  color: #1a5632;
+  border-color: #bad3c3;
+}
+.subcatPillActive {
+  background: #26784a !important;
+  border-color: #26784a !important;
+  color: #ffffff !important;
+  font-weight: 600;
+  box-shadow: 0 2px 6px rgba(38, 120, 74, 0.2);
+}
+
 @media (min-width: 768px) { .catalog { padding: 28px 28px 40px; } .grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; } .section { margin-bottom: 40px; } }
+@media (min-width: 1024px) {
+  .catalog {
+    padding: 36px 32px 52px;
+    max-width: 1280px;
+    margin: 0 auto;
+  }
+  .grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 22px;
+  }
+  .heading {
+    margin-bottom: 18px;
+  }
+  .heading h1, .heading h2 {
+    font-size: 24px;
+  }
+  .heading a {
+    font-size: 14px;
+    font-weight: 600;
+  }
+  .section {
+    margin-bottom: 48px;
+  }
+}

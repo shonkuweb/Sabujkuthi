@@ -73,10 +73,12 @@ test('customer table creation in initialize script is additive and idempotent', 
     assert.ok(tableInfo.some(c => c.name === 'id'));
     assert.ok(tableInfo.some(c => c.name === 'phone'));
     assert.ok(tableInfo.some(c => c.name === 'passwordHash'));
+    assert.ok(tableInfo.some(c => c.name === 'state'));
+    assert.ok(tableInfo.some(c => c.name === 'pincode'));
 
     // Insert customer
-    db.prepare('INSERT INTO Customer (id, phone, passwordHash, name, updatedAt) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)')
-      .run('c1', '8637054105', 'salt:hash', 'User One');
+    db.prepare('INSERT INTO Customer (id, phone, passwordHash, name, state, pincode, updatedAt) VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)')
+      .run('c1', '8637054105', 'salt:hash', 'User One', 'West Bengal', '721253');
 
     // Run initializer again — must not throw or overwrite
     initialize();

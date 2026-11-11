@@ -192,54 +192,15 @@ export default function HeroSettingsEditor({ onSavingChange }) {
   return (
     <div className={styles.workspace}>
       <p className={styles.hint}>
-        Configure your store's announcement bar, dynamic hero banner images (hosted on Cloudflare R2), and homepage tickers.
+        Configure dynamic hero banner images (hosted on Cloudflare R2) and homepage tickers.
       </p>
 
       <form className={styles.editor} onSubmit={save} aria-label="Hero banner settings">
         <fieldset className={styles.fields} disabled={saving || uploading}>
-          {/* Announcement Bar Settings */}
-          <h3 className={styles.fieldHeading} style={{ marginTop: 0, paddingTop: 0, borderTop: 0 }}>
-            Announcement Bar
-          </h3>
-          <div className={styles.visibility}>
-            <div>
-              <label htmlFor="announcement-enabled">Show announcement bar</label>
-              <p>Show or hide the announcement bar at the very top of the store.</p>
-            </div>
-            <button
-              type="button"
-              id="announcement-enabled"
-              role="switch"
-              aria-label="Show announcement bar"
-              aria-checked={settings.announcementVisible}
-              className={styles.switch}
-              onClick={() =>
-                setSettings({ ...settings, announcementVisible: !settings.announcementVisible })
-              }
-            >
-              <span />
-            </button>
-          </div>
-
-          <label className={styles.label} htmlFor="announcement-text" style={{ marginTop: 18 }}>
-            Announcement text (optional)
-          </label>
-          <input
-            id="announcement-text"
-            className={styles.nameInput}
-            value={settings.announcementText || ""}
-            maxLength={500}
-            placeholder="e.g. Free Delivery on orders ₹3,999 and above (leave blank for automatic text)"
-            onChange={(event) =>
-              setSettings({ ...settings, announcementText: event.target.value })
-            }
-          />
-          <p className={styles.hint} style={{ marginTop: -16, marginBottom: 24 }}>
-            Leave blank to automatically display the free delivery announcement based on your delivery settings.
-          </p>
-
           {/* Hero Banner Images */}
-          <h3 className={styles.fieldHeading}>Hero Banner Images</h3>
+          <h3 className={styles.fieldHeading} style={{ marginTop: 0, paddingTop: 0, borderTop: 0 }}>
+            Hero Banner Images
+          </h3>
           <p className={styles.hint}>
             Upload up to 5 images for the hero section. Images are uploaded to Cloudflare R2 and will only be displayed as a rotating carousel in the hero section.
           </p>

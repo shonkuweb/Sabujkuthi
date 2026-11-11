@@ -4,10 +4,12 @@ import Link from "next/link";
 import { FiX, FiMinus, FiPlus, FiTrash2, FiShoppingBag, FiArrowRight, FiCheckCircle } from "react-icons/fi";
 import { useCart } from "../context/CartContext";
 import { useStoreSettings } from "../context/StoreSettingsContext";
+import DiscountNudgeBanner from "./DiscountNudgeBanner";
+import { calculateDiscount } from "../../lib/discounts.mjs";
 
 export default function CartSidebar() {
   const { items: cartItems, updateQty, removeItem, isSidebarOpen, setIsSidebarOpen } = useCart();
-  const { deliverySettings } = useStoreSettings();
+  const { deliverySettings, offersSettings } = useStoreSettings();
 
   const toAmount = (value) => {
     const match = String(value).replace(/,/g, "").match(/\d+(?:\.\d+)?/);
@@ -19,6 +21,10 @@ export default function CartSidebar() {
   const threshold = deliverySettings?.freeDeliveryThreshold ?? 3999;
   const progressPercent = threshold > 0 ? Math.min(100, Math.round((subtotal / threshold) * 100)) : 100;
   const isFreeDelivery = threshold > 0 && subtotal >= threshold;
+
+  const discountRule = offersSettings?.discountRule;
+  const discountRupees = calculateDiscount(subtotal, discountRule);
+  const estimatedTotal = Math.max(0, subtotal - discountRupees);
 
   return (
     <>
@@ -71,6 +77,13 @@ export default function CartSidebar() {
                 style={{ width: `${progressPercent}%` }}
               />
             </div>
+          </div>
+        )}
+
+        {/* Discount Nudge Banner */}
+        {cartItems.length > 0 && (
+          <div style={{ padding: '0.5rem 1rem 0' }}>
+            <DiscountNudgeBanner subtotal={subtotal} onCtaClick={() => setIsSidebarOpen(false)} />
           </div>
         )}
 
@@ -147,6 +160,18 @@ export default function CartSidebar() {
               <span className="cart-subtotal-label">Subtotal</span>
               <strong className="cart-subtotal-val">₹{subtotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
             </div>
+            {discountRupees > 0 && (
+              <div className="cart-subtotal-row" style={{ color: '#16a34a' }}>
+                <span className="cart-subtotal-label">Discount ({discountRule?.title || 'Offer'})</span>
+                <strong className="cart-subtotal-val">-₹{discountRupees.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
+              </div>
+            )}
+            {discountRupees > 0 && (
+              <div className="cart-subtotal-row" style={{ fontWeight: 700, fontSize: '1.05rem', borderTop: '1px dashed #e2e8f0', paddingTop: '0.4rem', marginTop: '0.2rem' }}>
+                <span className="cart-subtotal-label">Estimated Total</span>
+                <strong className="cart-subtotal-val">₹{estimatedTotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
+              </div>
+            )}
             <p className="tax-shipping-note">Taxes and delivery calculated at checkout.</p>
             <Link
               href="/checkout"

@@ -14,3 +14,42 @@
 .add:disabled { color: #aaa; background: #f0f0f0; cursor: default; }
 .card a:focus-visible, .add:focus-visible { outline: 3px solid #247346; outline-offset: -3px; }
 @media (max-width: 360px) { .info { padding: 10px 8px; } .prices strong { font-size: 12px; } .prices del { font-size: 10px; } }
+@media (min-width: 768px) {
+  .card {
+    border-radius: 16px;
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 28px rgba(24, 59, 32, 0.12);
+  }
+  .imageLink img {
+    transition: transform 0.35s ease;
+  }
+  .card:hover .imageLink img {
+    transform: scale(1.04);
+  }
+  .info {
+    padding: 13px 12px 15px;
+    gap: 12px;
+  }
+  .title {
+    font-size: 14px;
+    transition: color 0.15s;
+  }
+  .title:hover {
+    color: #1f6b2c;
+  }
+  .prices strong {
+    font-size: 16px;
+  }
+  .add {
+    min-height: 40px;
+    font-size: 13px;
+    border-radius: 8px;
+    transition: background-color 0.15s, transform 0.15s;
+  }
+  .add:hover:not(:disabled) {
+    transform: translateY(-1px);
+  }
+}

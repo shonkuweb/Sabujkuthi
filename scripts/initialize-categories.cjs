@@ -28,10 +28,13 @@ try {
         isVisibleInNav: 'BOOLEAN NOT NULL DEFAULT true',
         isVisibleInGrid: 'BOOLEAN NOT NULL DEFAULT true',
         isVisibleInShopBy: 'BOOLEAN NOT NULL DEFAULT true',
+        parentId: 'TEXT REFERENCES Category(id) ON DELETE SET NULL',
+        order: 'INTEGER NOT NULL DEFAULT 0',
       };
       for (const [column, definition] of Object.entries(categoryAdditions)) {
         if (!categoryColumns.some(existing => existing.name === column)) db.exec(`ALTER TABLE Category ADD COLUMN "${column}" ${definition}`);
       }
+      db.exec('CREATE INDEX IF NOT EXISTS "Category_parentId_idx" ON "Category"("parentId")');
     }
     const productColumns = db.prepare('PRAGMA table_info(Product)').all();
     if (productColumns.length) {
@@ -40,6 +43,8 @@ try {
         deliveryReturns: 'TEXT',
         deliveryNote: 'TEXT',
         deliveryPincodes: 'TEXT',
+        shippingScope: "TEXT DEFAULT 'all_india'",
+        deliveryStates: 'TEXT',
         replacementInfo: 'TEXT',
         deliveryInfo: 'TEXT',
         supportInfo: 'TEXT',
@@ -47,6 +52,7 @@ try {
         soldLast24Hours: 'INTEGER',
         demoMetrics: 'BOOLEAN NOT NULL DEFAULT true',
         categoryId: 'TEXT REFERENCES Category(id) ON DELETE SET NULL',
+        categoryIds: 'TEXT',
         oldPrice: 'TEXT',
         inStock: 'BOOLEAN NOT NULL DEFAULT true',
         isPublished: 'BOOLEAN NOT NULL DEFAULT false',
@@ -56,6 +62,18 @@ try {
         if (!productColumns.some(existing => existing.name === column)) db.exec(`ALTER TABLE Product ADD COLUMN "${column}" ${definition}`);
       }
       db.exec('CREATE INDEX IF NOT EXISTS "Product_categoryId_idx" ON "Product"("categoryId")');
+      db.exec(`CREATE TABLE IF NOT EXISTS "ProductCategory" (
+        "productId" TEXT NOT NULL,
+        "categoryId" TEXT NOT NULL,
+        PRIMARY KEY ("productId", "categoryId"),
+        FOREIGN KEY ("productId") REFERENCES "Product"("id") ON DELETE CASCADE,
+        FOREIGN KEY ("categoryId") REFERENCES "Category"("id") ON DELETE CASCADE
+      );
+      CREATE INDEX IF NOT EXISTS "ProductCategory_categoryId_idx" ON "ProductCategory"("categoryId");
+      CREATE INDEX IF NOT EXISTS "ProductCategory_productId_idx" ON "ProductCategory"("productId");`);
+      db.exec(`INSERT OR IGNORE INTO ProductCategory (productId, categoryId)
+        SELECT id, categoryId FROM Product WHERE categoryId IS NOT NULL AND categoryId != '';`);
+      db.exec(`UPDATE Product SET categoryIds = json_array(categoryId) WHERE (categoryIds IS NULL OR categoryIds = '') AND categoryId IS NOT NULL AND categoryId != '';`);
     }
     db.exec(`CREATE TABLE IF NOT EXISTS "Order" (
       "id" TEXT NOT NULL PRIMARY KEY, "receipt" TEXT NOT NULL,
@@ -80,11 +98,25 @@ try {
       "phone" TEXT NOT NULL,
       "passwordHash" TEXT NOT NULL,
       "name" TEXT,
+      "state" TEXT,
+      "pincode" TEXT,
       "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
       "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
     );
     CREATE UNIQUE INDEX IF NOT EXISTS "Customer_phone_key" ON "Customer"("phone");
-    CREATE INDEX IF NOT EXISTS "Customer_phone_idx" ON "Customer"("phone");`);
+    CREATE INDEX IF NOT EXISTS "Customer_phone_idx" ON "Customer"("phone");
+    CREATE TABLE IF NOT EXISTS "SiteVisit" (
+      "id" TEXT NOT NULL PRIMARY KEY,
+      "date" TEXT NOT NULL,
+      "count" INTEGER NOT NULL DEFAULT 1,
+      "uniqueVisitors" INTEGER NOT NULL DEFAULT 1
+    );
+    CREATE UNIQUE INDEX IF NOT EXISTS "SiteVisit_date_key" ON "SiteVisit"("date");`);
+    const customerColumns = db.prepare('PRAGMA table_info(Customer)').all();
+    if (customerColumns.length) {
+      if (!customerColumns.some(col => col.name === 'state')) db.exec('ALTER TABLE "Customer" ADD COLUMN "state" TEXT');
+      if (!customerColumns.some(col => col.name === 'pincode')) db.exec('ALTER TABLE "Customer" ADD COLUMN "pincode" TEXT');
+    }
     const orderColumns = db.prepare('PRAGMA table_info("Order")').all();
     if (!orderColumns.some(column => column.name === 'orderNumber')) db.exec('ALTER TABLE "Order" ADD COLUMN "orderNumber" INTEGER');
     let lastNumber = Math.max(1000, db.prepare('SELECT MAX(orderNumber) AS number FROM "Order"').get().number || 0,

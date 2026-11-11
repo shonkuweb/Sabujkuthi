@@ -11,7 +11,7 @@ export async function GET(request) {
 
     const customer = await prisma.customer.findUnique({
       where: { id: session.id },
-      select: { id: true, phone: true, name: true, createdAt: true }
+      select: { id: true, phone: true, name: true, state: true, pincode: true, createdAt: true }
     });
 
     if (!customer) {
@@ -24,6 +24,8 @@ export async function GET(request) {
         id: customer.id,
         phone: customer.phone,
         name: customer.name || '',
+        state: customer.state || '',
+        pincode: customer.pincode || '',
         createdAt: customer.createdAt,
       }
     });

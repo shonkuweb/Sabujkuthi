@@ -25,6 +25,8 @@ model Product {
   deliveryReturns String?
   deliveryNote   String?
   deliveryPincodes String?
+  shippingScope   String? @default("all_india")
+  deliveryStates  String?
   replacementInfo String?
   deliveryInfo   String?
   supportInfo    String?
@@ -38,7 +40,9 @@ model Product {
   reviews        Int     @default(0)
   adeniumOptions String? // Stored as JSON string
   categoryId     String?
-  category       Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  category       Category? @relation("PrimaryCategory", fields: [categoryId], references: [id], onDelete: SetNull)
+  categoryIds    String? // Stored as JSON string array e.g. '["id1","id2"]'
+  productCategories ProductCategory[]
   oldPrice       String?
   inStock        Boolean @default(true)
   isPublished    Boolean @default(false)
@@ -49,16 +53,34 @@ model Product {
 }
 
 model Category {
-  id                String  @id @default(uuid())
-  slug              String  @unique
+  id                String            @id @default(uuid())
+  slug              String            @unique
   name              String
-  nameKey           String  @unique
-  products          Product[]
-  image             String  @default("")
-  isVisible         Boolean @default(true)
-  isVisibleInNav    Boolean @default(true)
-  isVisibleInGrid   Boolean @default(true)
-  isVisibleInShopBy Boolean @default(true)
+  nameKey           String            @unique
+  parentId          String?
+  parent            Category?         @relation("CategoryHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
+  children          Category[]        @relation("CategoryHierarchy")
+  order             Int               @default(0)
+  products          Product[]         @relation("PrimaryCategory")
+  productCategories ProductCategory[]
+  image             String            @default("")
+  isVisible         Boolean           @default(true)
+  isVisibleInNav    Boolean           @default(true)
+  isVisibleInGrid   Boolean           @default(true)
+  isVisibleInShopBy Boolean           @default(true)
+
+  @@index([parentId])
+}
+
+model ProductCategory {
+  productId  String
+  categoryId String
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([productId, categoryId])
+  @@index([categoryId])
+  @@index([productId])
 }
 
 model Order {
@@ -95,9 +117,17 @@ model Customer {
   phone        String   @unique
   passwordHash String
   name         String?
+  state        String?
+  pincode      String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
   @@index([phone])
 }
 
+model SiteVisit {
+  id             String @id @default(uuid())
+  date           String @unique // YYYY-MM-DD
+  count          Int    @default(1)
+  uniqueVisitors Int    @default(1)
+}

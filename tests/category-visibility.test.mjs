@@ -20,6 +20,8 @@ test('category schema includes granular visibility options and migrations are ad
     assert.ok(columns.includes('isVisibleInNav'));
     assert.ok(columns.includes('isVisibleInGrid'));
     assert.ok(columns.includes('isVisibleInShopBy'));
+    assert.ok(columns.includes('parentId'));
+    assert.ok(columns.includes('order'));
 
     // Insert a category with specific visibility flags
     db.prepare(`

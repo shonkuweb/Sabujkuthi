@@ -78,6 +78,54 @@
 .related { margin-top: 38px; }
 .related h2 { margin: 0 0 18px; font-size: 19px; }
 .related > div { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.desktopThumbnails {
+  display: none;
+}
+.desktopThumbBtn {
+  border: 0;
+  background: transparent;
+  padding: 0;
+}
 .page button:focus-visible, .page a:focus-visible, .page input:focus-visible, .page summary:focus-visible { outline: 2px solid #34742e; outline-offset: 3px; }
-@media (min-width: 850px) { .page { padding: 24px 34px 45px; } .layout { grid-template-columns: 1fr 1fr; gap: 42px; align-items: start; } .productImage { position: sticky; top: 24px; } .titleRow h1 { font-size: 25px; } .related > div { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; } }
+@media (min-width: 850px) {
+  .page { padding: 32px 36px 56px; max-width: 1200px; margin: 0 auto; }
+  .layout { grid-template-columns: 1fr 1.15fr; gap: 48px; align-items: start; }
+  .productImage, .carouselContainer { position: sticky; top: 28px; }
+  .desktopThumbnails {
+    display: flex;
+    gap: 12px;
+    margin-top: 14px;
+    justify-content: center;
+  }
+  .desktopThumbBtn {
+    width: 68px;
+    height: 68px;
+    padding: 0;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 2px solid transparent;
+    cursor: pointer;
+    background: #edf1e9;
+    transition: border-color 0.2s, transform 0.15s;
+  }
+  .desktopThumbBtn:hover {
+    transform: translateY(-2px);
+    border-color: #26784a;
+  }
+  .desktopThumbBtnActive {
+    border-color: #26784a;
+    box-shadow: 0 2px 8px rgba(38, 120, 74, 0.25);
+  }
+  .desktopThumbBtn img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .titleRow h1 { font-size: 26px; }
+  .price > strong { font-size: 28px; }
+  .buttons { gap: 14px; }
+  .buttons button { min-height: 48px; font-size: 14px; }
+  .related > div { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; }
+}
 @media (prefers-reduced-motion: reduce) { .accordions summary svg { transition: none; } }

@@ -30,5 +30,123 @@
 .empty h2 { font-size: 17px; margin: 0 0 10px; }
 .empty p { margin: 0; color: #8c987f; font-size: 12px; line-height: 1.7; }
 .empty button { margin-top: 20px; padding: 10px 14px; border: 0; border-radius: 7px; background: #26784a; color: #fff; font-size: 12px; cursor: pointer; }
+.desktopLayout {
+  display: block;
+}
+.desktopSidebar {
+  display: none;
+}
 .page button:focus-visible, .page input:focus-visible { outline: 2px solid #34754b; outline-offset: 3px; }
-@media (min-width: 768px) { .page { padding: 28px 28px 45px; } .grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; } .options { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (min-width: 768px) {
+  .page { padding: 28px 28px 45px; }
+  .grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; }
+  .options { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (min-width: 1024px) {
+  .page {
+    padding: 36px 36px 60px;
+    max-width: 1280px;
+    margin: 0 auto;
+  }
+  .filterButton {
+    display: none;
+  }
+  .filters {
+    display: none;
+  }
+  .desktopLayout {
+    display: flex;
+    gap: 36px;
+    align-items: flex-start;
+  }
+  .desktopSidebar {
+    display: block;
+    width: 260px;
+    flex-shrink: 0;
+    position: sticky;
+    top: 110px;
+    background: #ffffff;
+    border: 1px solid #dfe7d8;
+    border-radius: 16px;
+    padding: 22px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.03);
+  }
+  .sidebarHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 18px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #edf1e7;
+  }
+  .sidebarHeader h3 {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 700;
+    color: #1f3b23;
+  }
+  .sidebarClearBtn {
+    border: 0;
+    background: transparent;
+    color: #26784a;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 0;
+    text-decoration: underline;
+  }
+  .sidebarOptions {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .sidebarLabel {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    color: #435b3e;
+    cursor: pointer;
+    transition: color 0.15s;
+  }
+  .sidebarLabel:hover {
+    color: #1f6b2c;
+  }
+  .sidebarLabel input {
+    accent-color: #26784a;
+    width: 17px;
+    height: 17px;
+    margin: 0;
+    cursor: pointer;
+  }
+  .sidebarLabel span {
+    flex: 1;
+    overflow-wrap: anywhere;
+  }
+  .sidebarLabel small {
+    margin-left: auto;
+    color: #8c9b83;
+    font-size: 11px;
+    background: #f0f5ed;
+    padding: 2px 7px;
+    border-radius: 10px;
+  }
+  .sidebarEmpty {
+    color: #88947e;
+    font-size: 12px;
+  }
+  .desktopContent {
+    flex: 1;
+    min-width: 0;
+  }
+  .grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 20px;
+  }
+}
+@media (min-width: 1280px) {
+  .grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 20px;
+  }
+}

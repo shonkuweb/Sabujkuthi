@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -27,6 +27,7 @@ import SiteFooter from "./SiteFooter";
 import { useCategories } from "../hooks/useCategories";
 import { useCart } from "../context/CartContext";
 import { useCustomer } from "../context/CustomerContext";
+import { buildCategoryTree } from "../../lib/category-tree.mjs";
 
 const StoreSearchContext = createContext(null);
 export function useStoreSearch() { return useContext(StoreSearchContext); }
@@ -37,6 +38,18 @@ export default function StoreShell({ children }) {
   const allCategories = useCategories();
   const categories = allCategories.filter(category => category.isVisible !== false);
   const navCategories = categories.filter(category => category.isVisibleInNav !== false);
+  const navCategoryTree = useMemo(() => buildCategoryTree(navCategories), [navCategories]);
+  const [mobileExpandedCatIds, setMobileExpandedCatIds] = useState(new Set());
+  const toggleMobileCat = (id, e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setMobileExpandedCatIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
   const { items, setIsSidebarOpen } = useCart();
   const { customer, logout } = useCustomer();
   const [searchQuery, setSearchQuery] = useState("");
@@ -45,6 +58,16 @@ export default function StoreShell({ children }) {
 
   const isAdmin = pathname.startsWith('/admin');
   const isHome = pathname === '/';
+  const categorySlug = pathname.startsWith('/category/')
+    ? pathname.replace('/category/', '').split('/')[0].split('?')[0]
+    : null;
+  const currentCategory = categorySlug ? allCategories.find(c => c.slug === categorySlug) : null;
+  const currentSubcategories = currentCategory
+    ? categories.filter(c => c.parentId === currentCategory.id)
+    : [];
+
+  const homeCategories = navCategories.filter(c => !c.parentId);
+  const displayHomeCategories = homeCategories.length > 0 ? homeCategories : navCategories;
   const cartCount = items.reduce((sum, i) => sum + i.qty, 0);
 
   useEffect(() => {
@@ -89,7 +112,8 @@ export default function StoreShell({ children }) {
     <StoreSearchContext.Provider value={{ searchQuery, setSearchQuery }}>
       <div className="mobile-page">
         <AnnouncementBar />
-        <header className="header">
+        {/* Mobile Header (active < 1024px) */}
+        <header className="header mobile-header">
           <button type="button" className="icon-btn" aria-label="Open navigation menu" onClick={() => setMenuOpen(true)}>
             <FiMenu />
           </button>
@@ -114,7 +138,8 @@ export default function StoreShell({ children }) {
           </div>
         </header>
 
-        <form className="search-wrap" onSubmit={search} role="search">
+        {/* Mobile Search Wrap (active < 1024px) */}
+        <form className="search-wrap mobile-search-wrap" onSubmit={search} role="search">
           <div className="search-box">
             <FiSearch className="search-icon" />
             <input
@@ -127,9 +152,89 @@ export default function StoreShell({ children }) {
           </div>
         </form>
 
-        {isHome && navCategories.length > 0 && (
+        {/* Desktop Header (active >= 1024px) */}
+        <header className="desktop-header">
+          <div className="desktop-header-inner">
+            <Link href="/" className="desktop-logo-link" aria-label={`${business.name} home`} onClick={() => setSearchQuery('')}>
+              <BusinessLogo className="desktop-store-logo" />
+            </Link>
+
+            <form className="desktop-search-form" onSubmit={search} role="search">
+              <div className="desktop-search-box">
+                <FiSearch className="desktop-search-icon" aria-hidden="true" />
+                <input
+                  type="search"
+                  placeholder="Search plants, pots, fertilizers, gardening tools..."
+                  aria-label="Search plants and products"
+                  value={searchQuery}
+                  onChange={event => setSearchQuery(event.target.value)}
+                />
+                <button type="submit" className="desktop-search-btn" aria-label="Search">
+                  Search
+                </button>
+              </div>
+            </form>
+
+            <div className="desktop-header-actions">
+              <Link
+                href={customer ? "/account" : "/login"}
+                className="desktop-header-action-item customer-account-btn"
+                aria-label={customer ? `My Account (${customer.name || customer.phone})` : "Customer Login / Sign Up"}
+                title={customer ? "My Account" : "Customer Login"}
+              >
+                <span className="desktop-user-icon-wrap">
+                  <FiUser className="desktop-action-icon" aria-hidden="true" />
+                  {customer && <span className="user-active-dot" aria-hidden="true" />}
+                </span>
+                <span className="desktop-action-label">
+                  {customer ? (customer.name ? customer.name.split(' ')[0] : customer.phone) : "Sign In"}
+                </span>
+              </Link>
+            </div>
+          </div>
+        </header>
+
+        {/* Desktop Navigation Bar (active >= 1024px) */}
+        <nav className="desktop-nav-bar" aria-label="Desktop primary navigation">
+          <div className="desktop-nav-inner">
+            <div className="desktop-nav-links">
+              <Link
+                href="/"
+                className={`desktop-nav-link ${pathname === '/' ? 'active' : ''}`}
+                onClick={() => setSearchQuery('')}
+              >
+                <FiHome className="desktop-nav-icon" aria-hidden="true" />
+                <span>Home</span>
+              </Link>
+              <Link
+                href="/collection"
+                className={`desktop-nav-link ${pathname === '/collection' ? 'active' : ''}`}
+              >
+                <FaLeaf className="desktop-nav-icon" aria-hidden="true" />
+                <span>All Plants</span>
+              </Link>
+              <Link
+                href="/track-order"
+                className={`desktop-nav-link ${pathname === '/track-order' ? 'active' : ''}`}
+              >
+                <FiTruck className="desktop-nav-icon" aria-hidden="true" />
+                <span>Track Order</span>
+              </Link>
+              <Link
+                href="/contact"
+                className={`desktop-nav-link ${pathname === '/contact' ? 'active' : ''}`}
+              >
+                <FiPhoneCall className="desktop-nav-icon" aria-hidden="true" />
+                <span>Contact Us</span>
+              </Link>
+            </div>
+          </div>
+        </nav>
+
+        {/* Homepage Circular Categories Row */}
+        {isHome && displayHomeCategories.length > 0 && (
           <section id="categories" className="category-row" aria-label="Plant categories">
-            {navCategories.map((category, index) => (
+            {displayHomeCategories.map((category, index) => (
               <Link
                 key={category.id}
                 href={`/category/${category.slug}`}
@@ -148,6 +253,33 @@ export default function StoreShell({ children }) {
                   )}
                 </div>
                 <span className="category-name">{category.name}</span>
+              </Link>
+            ))}
+          </section>
+        )}
+
+        {/* Circular Subcategories Row Under Navbar when viewing a Category with Subcategories */}
+        {!isHome && currentSubcategories.length > 0 && (
+          <section id="subcategories" className="category-row" aria-label={`${currentCategory?.name || 'Category'} subcategories`}>
+            {currentSubcategories.map((sub, index) => (
+              <Link
+                key={sub.id}
+                href={`/category/${sub.slug}`}
+                className="category-modern"
+                onClick={() => setSearchQuery('')}
+              >
+                <div className={`category-icon-modern tone-${index % 2 === 0 ? 'a' : 'b'}`}>
+                  {sub.image ? (
+                    <img
+                      src={sub.image}
+                      alt=""
+                      style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 'inherit' }}
+                    />
+                  ) : (
+                    <FaLeaf />
+                  )}
+                </div>
+                <span className="category-name">{sub.name}</span>
               </Link>
             ))}
           </section>
@@ -215,17 +347,47 @@ export default function StoreShell({ children }) {
                 </button>
                 {categoriesExpanded && (
                   <div className="accordion-categories-list" id="menu-categories-list">
-                    {navCategories.map(category => (
-                      <Link
-                        key={category.id}
-                        href={`/category/${category.slug}`}
-                        className="accordion-category-item"
-                        onClick={() => { closeMenu(); setSearchQuery(''); }}
-                      >
-                        <span className="accordion-category-dot">🌿</span>
-                        <span className="accordion-category-name">{category.name}</span>
-                        <FiChevronRight className="accordion-item-arrow" />
-                      </Link>
+                    {navCategoryTree.map(category => (
+                      <div key={category.id} className="accordion-category-group">
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                          <Link
+                            href={`/category/${category.slug}`}
+                            className="accordion-category-item"
+                            style={{ flex: 1, fontWeight: category.children?.length ? 600 : 400 }}
+                            onClick={() => { closeMenu(); setSearchQuery(''); }}
+                          >
+                            <span className="accordion-category-dot">🌿</span>
+                            <span className="accordion-category-name">{category.name}</span>
+                          </Link>
+                          {category.children?.length > 0 && (
+                            <button
+                              type="button"
+                              onClick={(e) => toggleMobileCat(category.id, e)}
+                              style={{ background: 'none', border: 'none', padding: '10px 14px', cursor: 'pointer', color: '#15803d' }}
+                              aria-label={`Drop down subcategories for ${category.name}`}
+                            >
+                              <FiChevronDown style={{ transform: mobileExpandedCatIds.has(category.id) ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
+                            </button>
+                          )}
+                        </div>
+                        {category.children?.length > 0 && mobileExpandedCatIds.has(category.id) && (
+                          <div style={{ paddingLeft: '1.25rem', background: 'rgba(38, 120, 74, 0.04)', borderRadius: '6px', margin: '2px 0 6px' }}>
+                            {category.children.map(sub => (
+                              <Link
+                                key={sub.id}
+                                href={`/category/${sub.slug}`}
+                                className="accordion-category-item"
+                                style={{ padding: '8px 10px', fontSize: '0.88rem' }}
+                                onClick={() => { closeMenu(); setSearchQuery(''); }}
+                              >
+                                <span style={{ marginRight: '6px', opacity: 0.6 }}>↳</span>
+                                <span>{sub.name}</span>
+                                <FiChevronRight className="accordion-item-arrow" />
+                              </Link>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     ))}
                     <Link
                       href="/collection"

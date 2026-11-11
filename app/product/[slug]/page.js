@@ -8,8 +8,11 @@ import { FiChevronDown, FiChevronLeft, FiChevronRight, FiHeart, FiImage, FiMapPi
 import { FaFacebookF, FaFire, FaStar, FaRegStar, FaTwitter } from "react-icons/fa";
 import { useCategories } from "../../hooks/useCategories";
 import { useCart } from "../../context/CartContext";
+import { useCustomer } from "../../context/CustomerContext";
 import ProductCard from "../../components/ProductCard";
 import PaymentMethods from "../../components/PaymentMethods";
+import { isProductDeliverableToLocation } from "../../../lib/indian-regions.mjs";
+import { getCategoryPath } from "../../../lib/category-tree.mjs";
 import styles from "./page.module.css";
 
 const money = value => Number(value).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -29,21 +32,36 @@ export default function ProductPage() {
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [touchStartX, setTouchStartX] = useState(null);
   const { addItem, products, productsLoading, productsError, showCartAfterAdd } = useCart();
+  const { customer } = useCustomer();
   const product = products.find(item => item.slug === slug);
 
   useEffect(() => {
-    setQty(1); setVariantQtys({}); setPincode(''); setDeliveryMessage(''); setPurchaseError('');
+    setQty(1); setVariantQtys({}); setPurchaseError('');
     setActiveImageIndex(0);
     setShareUrl(window.location.href);
     try { setFavorite(JSON.parse(localStorage.getItem('nursery-wishlist') || '[]').includes(slug)); }
     catch { setFavorite(false); }
-  }, [slug]);
+
+    if (customer?.pincode && product) {
+      setPincode(customer.pincode);
+      const check = isProductDeliverableToLocation(product, customer.pincode);
+      if (check.deliverable) {
+        setDeliveryMessage(`✓ Available for delivery to your registered location (${customer.pincode}${customer.state ? `, ${customer.state}` : ''})!`);
+      } else {
+        setDeliveryMessage(`⚠️ Not deliverable to your registered location (${customer.pincode}${customer.state ? `, ${customer.state}` : ''}). ${check.message || ''}`);
+      }
+    } else {
+      setPincode('');
+      setDeliveryMessage('');
+    }
+  }, [slug, customer, product]);
 
   if (productsLoading) return <main className={styles.message} role="status">Loading product…</main>;
   if (productsError) return <main className={styles.message} role="alert">Unable to load this product. Please refresh to try again.</main>;
   if (!product) return <main className={styles.message}><h1>Product not found</h1><Link href="/">Back to store</Link></main>;
 
   const category = categories.find(item => item.id === product.categoryId);
+  const categoryPath = getCategoryPath(product.categoryId, categories);
   const discount = Number(product.oldPrice) > Number(product.price) ? Math.round((Number(product.oldPrice) - Number(product.price)) / Number(product.oldPrice) * 100) : 0;
   const variants = Object.entries(product.adeniumOptions || {}).filter(([, price]) => price !== '' && price != null);
   const related = products.filter(item => item.categoryId === product.categoryId && item.id !== product.id).slice(0, 4);
@@ -84,6 +102,13 @@ export default function ProductPage() {
   const addSelection = () => {
     setPurchaseError('');
     if (!product.inStock) return false;
+    if (pincode && /^[1-9][0-9]{5}$/.test(pincode)) {
+      const check = isProductDeliverableToLocation(product, pincode);
+      if (!check.deliverable) {
+        setPurchaseError(check.message || `This product cannot be delivered to ${pincode}.`);
+        return false;
+      }
+    }
     if (variants.length) {
       const selected = Object.entries(variantQtys).filter(([, quantity]) => quantity > 0);
       if (!selected.length) { setPurchaseError('Please select at least one option.'); return false; }
@@ -95,19 +120,34 @@ export default function ProductPage() {
   const checkDelivery = event => {
     event.preventDefault();
     if (!product.inStock) { setDeliveryMessage('This product is currently sold out.'); return; }
-    const supported = (product.deliveryPincodes || '').split(',').map(code => code.trim()).filter(Boolean);
-    if (supported.length && !supported.includes(pincode)) {
-      setDeliveryMessage(`Delivery to ${pincode} is not currently listed for this product. Contact us for assistance.`);
-    } else if (supported.length) {
-      setDeliveryMessage(`Delivery is available to ${pincode}.${product.deliveryNote ? ` ${product.deliveryNote}` : ''}`);
+    const check = isProductDeliverableToLocation(product, pincode);
+    if (!check.deliverable) {
+      setDeliveryMessage(check.message || `Delivery to pincode ${pincode} is not available for this product.`);
     } else {
-      setDeliveryMessage(`${product.deliveryNote ? `${product.deliveryNote} ` : ''}Please contact the nursery to confirm delivery to ${pincode}.`);
+      setDeliveryMessage(`✓ Delivery is available to pincode ${pincode}!${product.deliveryNote ? ` ${product.deliveryNote}` : ''}`);
     }
   };
 
   return (
     <main className={styles.page}>
-      <nav className={styles.breadcrumbs} aria-label="Breadcrumb"><Link href="/">Home</Link><span>/</span>{category && <><Link href={`/category/${category.slug}`}>{category.name}</Link><span>/</span></>}<span>{product.title}</span></nav>
+      <nav className={styles.breadcrumbs} aria-label="Breadcrumb">
+        <Link href="/">Home</Link>
+        <span>/</span>
+        {categoryPath.length > 0 ? (
+          categoryPath.map(cat => (
+            <span key={cat.id} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
+              <Link href={`/category/${cat.slug}`}>{cat.name}</Link>
+              <span>/</span>
+            </span>
+          ))
+        ) : category ? (
+          <>
+            <Link href={`/category/${category.slug}`}>{category.name}</Link>
+            <span>/</span>
+          </>
+        ) : null}
+        <span>{product.title}</span>
+      </nav>
       <div className={styles.layout}>
         {images.length > 1 ? (
           <div
@@ -149,6 +189,20 @@ export default function ProductPage() {
                 />
               ))}
             </div>
+            {/* Desktop thumbnails selector */}
+            <div className={styles.desktopThumbnails} aria-hidden="true">
+              {images.map((img, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  className={`${styles.desktopThumbBtn} ${idx === activeImageIndex ? styles.desktopThumbBtnActive : ''}`}
+                  onClick={() => setActiveImageIndex(idx)}
+                  tabIndex={-1}
+                >
+                  <img src={img} alt="" />
+                </button>
+              ))}
+            </div>
           </div>
         ) : (
           <div className={styles.productImage}>
@@ -164,6 +218,16 @@ export default function ProductPage() {
           </div>
           <div className={styles.price}><strong>Rs. {money(product.price)}</strong>{discount > 0 && <><del>Rs. {money(product.oldPrice)}</del><span>{discount}% OFF</span></>}</div>
           {product.demoMetrics && <p className={styles.viewers}><span className={styles.dot} /><span><strong>14</strong> people are viewing this right now</span><span className={styles.demo}>Demo</span></p>}
+          {product.shippingScope === 'states' && product.deliveryStates && (
+            <div style={{ fontSize: '0.84rem', color: '#0369a1', background: '#f0f9ff', border: '1px solid #bae6fd', padding: '0.45rem 0.75rem', borderRadius: '6px', margin: '0.6rem 0', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+              <span>🚚</span> <span><strong>Regional Availability:</strong> Ships to {product.deliveryStates} only.</span>
+            </div>
+          )}
+          {product.shippingScope === 'pincodes' && product.deliveryPincodes && (
+            <div style={{ fontSize: '0.84rem', color: '#0369a1', background: '#f0f9ff', border: '1px solid #bae6fd', padding: '0.45rem 0.75rem', borderRadius: '6px', margin: '0.6rem 0', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+              <span>📍</span> <span><strong>Select Pincodes Only:</strong> Check below to see if your location is supported.</span>
+            </div>
+          )}
           <form className={styles.delivery} onSubmit={checkDelivery}>
             <label htmlFor="delivery-pincode"><FiMapPin aria-hidden="true" />Check delivery & availability</label>
             <div><input id="delivery-pincode" placeholder="Enter Pincode" inputMode="numeric" pattern="[1-9][0-9]{5}" maxLength={6} required title="Enter a valid six-digit Indian pincode" value={pincode} onChange={event => { setPincode(event.target.value.replace(/\D/g, '')); setDeliveryMessage(''); }} /><button type="submit">Check</button></div>

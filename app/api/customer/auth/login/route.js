@@ -30,6 +30,8 @@ export async function POST(request) {
       id: customer.id,
       phone: customer.phone,
       name: customer.name || '',
+      state: customer.state || '',
+      pincode: customer.pincode || '',
     });
 
     const response = NextResponse.json({
@@ -39,6 +41,8 @@ export async function POST(request) {
         id: customer.id,
         phone: customer.phone,
         name: customer.name || '',
+        state: customer.state || '',
+        pincode: customer.pincode || '',
       }
     });
 

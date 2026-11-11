@@ -30,4 +30,29 @@
 .statusButton { display: block; margin: 14px auto; padding: 9px 15px; border: 1px solid #d5e2d2; border-radius: 8px; background: #fff; color: #34724b; font-size: 12px; cursor: pointer; }
 .secure { display: flex; align-items: center; justify-content: center; gap: 7px; font-size: 11px; color: #85917e; text-align: center; margin-top: 18px; line-height: 1.6; }
 .test { color: #a97824; font-size: 11px; text-align: center; }
+.checkoutLayout {
+  display: block;
+}
+.leftCol, .rightCol {
+  min-width: 0;
+}
 .page input:focus-visible, .page textarea:focus-visible, .page button:focus-visible { outline: 2px solid #34724b; outline-offset: 3px; }
+@media (min-width: 900px) {
+  .page {
+    max-width: 1040px;
+    padding: 36px 32px 64px;
+  }
+  .heading h1 {
+    font-size: 32px;
+  }
+  .checkoutLayout {
+    display: grid;
+    grid-template-columns: 1fr 410px;
+    gap: 32px;
+    align-items: start;
+  }
+  .rightCol {
+    position: sticky;
+    top: 24px;
+  }
+}

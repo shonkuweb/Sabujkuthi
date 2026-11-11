@@ -6,9 +6,12 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { FiCreditCard, FiLock, FiShield } from "react-icons/fi";
 import { useCart } from "../context/CartContext";
+import { useCustomer } from "../context/CustomerContext";
 import { useStoreSettings } from "../context/StoreSettingsContext";
 import { deliveryPaise, FREE_DELIVERY_THRESHOLD } from "../../lib/shipping.mjs";
 import { checkoutPost, loadRazorpay } from "../../lib/razorpay-checkout";
+import { calculateDiscount } from "../../lib/discounts.mjs";
+import DiscountNudgeBanner from "../components/DiscountNudgeBanner";
 import styles from "./page.module.css";
 
 const money = paise => (paise / 100).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -16,16 +19,32 @@ const money = paise => (paise / 100).toLocaleString('en-IN', { minimumFractionDi
 export default function CheckoutPage() {
   const router = useRouter();
   const { items, productsLoading, productsError, removePurchased } = useCart();
-  const { deliverySettings } = useStoreSettings();
+  const { customer } = useCustomer();
+  const { deliverySettings, offersSettings } = useStoreSettings();
   const [form, setForm] = useState({ name: '', phone: '', email: '', pincode: '', address: '' });
+
+  useEffect(() => {
+    if (customer) {
+      setForm(current => ({
+        ...current,
+        name: current.name || customer.name || '',
+        phone: current.phone || customer.phone || '',
+        pincode: current.pincode || customer.pincode || '',
+      }));
+    }
+  }, [customer]);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
   const [pending, setPending] = useState(null);
   const [testMode, setTestMode] = useState(false);
   const attempt = useRef(null);
   const subtotal = items.reduce((sum, item) => sum + Math.round(Number(item.price) * 100) * item.qty, 0);
+  const discountRule = offersSettings?.discountRule;
+  const subtotalRupees = Math.floor(subtotal / 100);
+  const discountRupees = calculateDiscount(subtotalRupees, discountRule);
+  const discountPaise = discountRupees * 100;
   const shipping = deliveryPaise(subtotal, deliverySettings);
-  const total = subtotal + shipping;
+  const total = Math.max(100, subtotal - discountPaise + shipping);
 
   const finish = useCallback((order, token) => {
     sessionStorage.setItem(`paid-order:${order.id}`, token);
@@ -115,19 +134,37 @@ export default function CheckoutPage() {
       <div className={styles.heading}><span><FiLock aria-hidden="true" />Secure checkout</span><h1>Complete Your Order</h1><p>Enter your delivery details and pay securely with Razorpay.</p></div>
       {productsLoading ? <p role="status">Loading your cart…</p> : productsError ? <p role="alert">Your cart could not be loaded. Refresh before checking out.</p> : <form onSubmit={pay}>
         <fieldset disabled={busy} className={styles.fields}>
-          <section className={styles.card}><h2><span>1</span>Delivery details</h2>
-            {[
-              ['name', 'Full name', 'text', 'name'], ['phone', 'Mobile number', 'tel', 'tel'],
-              ['email', 'Email (optional)', 'email', 'email'], ['pincode', 'Pincode', 'text', 'postal-code'],
-            ].map(([key, label, type, autoComplete]) => <label className={styles.label} key={key}>{label}<input type={type} autoComplete={autoComplete} required={key !== 'email'} maxLength={key === 'pincode' ? 6 : key === 'phone' ? 16 : key === 'name' ? 100 : 254} minLength={key === 'name' ? 2 : undefined} inputMode={key === 'pincode' ? 'numeric' : undefined} pattern={key === 'pincode' ? '[1-9][0-9]{5}' : key === 'phone' ? '(\\+?91)?[6-9][0-9]{9}' : undefined} value={form[key]} onChange={event => setForm(current => ({ ...current, [key]: event.target.value }))} /></label>)}
-            <label className={styles.label}>Full delivery address<textarea rows={3} autoComplete="street-address" required minLength={10} maxLength={1000} value={form.address} onChange={event => setForm(current => ({ ...current, address: event.target.value }))} placeholder="House number, street, area and city" /></label>
-          </section>
-          <section className={styles.card}><h2><span>2</span>Order summary</h2>
-            {!items.length ? <p className={styles.empty}>Your cart is empty. <Link href="/">Browse plants</Link></p> : items.map(item => <div className={styles.line} key={JSON.stringify([item.slug, item.variant])}>{item.image && <img src={item.image} alt="" />}<div><strong>{item.title}</strong><span>{item.variant ? `${item.variant} · ` : ''}Qty: {item.qty}</span></div><strong>₹{money(Math.round(Number(item.price) * 100) * item.qty)}</strong></div>)}
-            <div className={styles.totals}><p><span>Items</span><strong>₹{money(subtotal)}</strong></p><p><span>Delivery</span><strong>{shipping === 0 ? 'FREE' : `₹${money(shipping)}`}</strong></p><p className={styles.total}><span>Total payable</span><strong>₹{money(total)}</strong></p></div>
-            <p className={styles.hint}>Free delivery on orders ₹{(deliverySettings?.freeDeliveryThreshold ?? FREE_DELIVERY_THRESHOLD).toLocaleString('en-IN')} and above. Prices are checked again before payment.</p>
-          </section>
-          <button className={styles.pay} type="submit" disabled={!items.length || busy}><FiCreditCard aria-hidden="true" />{busy ? 'Processing…' : `Pay ₹${money(total)} with Razorpay`}</button>
+          <div className={styles.checkoutLayout}>
+            <div className={styles.leftCol}>
+              <section className={styles.card}><h2><span>1</span>Delivery details</h2>
+                {[
+                  ['name', 'Full name', 'text', 'name'], ['phone', 'Mobile number', 'tel', 'tel'],
+                  ['email', 'Email (optional)', 'email', 'email'], ['pincode', 'Pincode', 'text', 'postal-code'],
+                ].map(([key, label, type, autoComplete]) => <label className={styles.label} key={key}>{label}<input type={type} autoComplete={autoComplete} required={key !== 'email'} maxLength={key === 'pincode' ? 6 : key === 'phone' ? 16 : key === 'name' ? 100 : 254} minLength={key === 'name' ? 2 : undefined} inputMode={key === 'pincode' ? 'numeric' : undefined} pattern={key === 'pincode' ? '[1-9][0-9]{5}' : key === 'phone' ? '(\\+?91)?[6-9][0-9]{9}' : undefined} value={form[key]} onChange={event => setForm(current => ({ ...current, [key]: event.target.value }))} /></label>)}
+                <label className={styles.label}>Full delivery address<textarea rows={3} autoComplete="street-address" required minLength={10} maxLength={1000} value={form.address} onChange={event => setForm(current => ({ ...current, address: event.target.value }))} placeholder="House number, street, area and city" /></label>
+              </section>
+            </div>
+            <div className={styles.rightCol}>
+              <section className={styles.card}><h2><span>2</span>Order summary</h2>
+                {items.length > 0 && (
+                  <div style={{ marginBottom: '1rem' }}>
+                    <DiscountNudgeBanner subtotal={subtotal} />
+                  </div>
+                )}
+                {!items.length ? <p className={styles.empty}>Your cart is empty. <Link href="/">Browse plants</Link></p> : items.map(item => <div className={styles.line} key={JSON.stringify([item.slug, item.variant])}>{item.image && <img src={item.image} alt="" />}<div><strong>{item.title}</strong><span>{item.variant ? `${item.variant} · ` : ''}Qty: {item.qty}</span></div><strong>₹{money(Math.round(Number(item.price) * 100) * item.qty)}</strong></div>)}
+                <div className={styles.totals}>
+                  <p><span>Items</span><strong>₹{money(subtotal)}</strong></p>
+                  {discountPaise > 0 && (
+                    <p style={{ color: '#16a34a' }}><span>Discount ({discountRule?.title || 'Offer'})</span><strong>-₹{money(discountPaise)}</strong></p>
+                  )}
+                  <p><span>Delivery</span><strong>{shipping === 0 ? 'FREE' : `₹${money(shipping)}`}</strong></p>
+                  <p className={styles.total}><span>Total payable</span><strong>₹{money(total)}</strong></p>
+                </div>
+                <p className={styles.hint}>Free delivery on orders ₹{(deliverySettings?.freeDeliveryThreshold ?? FREE_DELIVERY_THRESHOLD).toLocaleString('en-IN')} and above. Prices are checked again before payment.</p>
+              </section>
+              <button className={styles.pay} type="submit" disabled={!items.length || busy}><FiCreditCard aria-hidden="true" />{busy ? 'Processing…' : `Pay ₹${money(total)} with Razorpay`}</button>
+            </div>
+          </div>
         </fieldset>
       </form>}
       {message && <p className={styles.notice} role="status">{message}</p>}

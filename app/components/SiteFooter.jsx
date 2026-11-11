@@ -28,49 +28,59 @@ export default function SiteFooter() {
         <path fill="#103b16" d="M0 42C57 3 80 49 157 29S284-8 500 29V44H0Z" />
       </svg>
       <div className="nursery-footer-inner">
-        <Link href="/" className="footer-brand" aria-label={`${business.name} home`}>
-          <img className="footer-logo" src={business.footerLogoCdn || "/images/sabujkuthi-footer-logo.png"} alt={business.name} width={2172} height={724} />
-        </Link>
-        <div className="footer-intro">
-          <p>Grow greener, live better.<br />With {business.name}.</p>
-          <div className="footer-socials">
-            <a href={whatsappUrl()} target="_blank" rel="noopener noreferrer" aria-label="WhatsApp"><FaWhatsapp /></a>
-            <a href={`tel:${business.phone}`} aria-label={`Call ${business.name}`}><FiPhone /></a>
+        <div className="footer-desktop-grid">
+          <div className="footer-brand-column">
+            <Link href="/" className="footer-brand" aria-label={`${business.name} home`}>
+              <img className="footer-logo" src={business.footerLogoCdn || "/images/sabujkuthi-footer-logo.png"} alt={business.name} width={2172} height={724} />
+            </Link>
+            <div className="footer-intro">
+              <p>Grow greener, live better.<br />With {business.name}.</p>
+              <div className="footer-socials">
+                <a href={whatsappUrl()} target="_blank" rel="noopener noreferrer" aria-label="WhatsApp"><FaWhatsapp /></a>
+                <a href={`tel:${business.phone}`} aria-label={`Call ${business.name}`}><FiPhone /></a>
+              </div>
+            </div>
+          </div>
+          <div className="footer-links-column">
+            <div className="footer-link-columns">
+              <nav aria-label="Quick links">
+                <h2>Quick Links</h2>
+                <ul>
+                  {[["Home", "/"], ["Shop All", "/collection"], ["Plant Collection", "/collection"], ["Checkout", "/checkout"], ["Contact Us", "/contact"]].map(([label, href]) => (
+                    <li key={label}><Link href={href}>{label}<FiChevronRight aria-hidden="true" /></Link></li>
+                  ))}
+                </ul>
+              </nav>
+              <nav aria-label="Customer care">
+                <h2>Customer Care</h2>
+                <ul>
+                  {careLinks.map(([label, Icon]) => (
+                    <li key={label}><a href={contactUrl(`Hello, I'd like information about ${label.toLowerCase()}.`)} target="_blank" rel="noopener noreferrer"><Icon aria-hidden="true" />{label}</a></li>
+                  ))}
+                </ul>
+              </nav>
+            </div>
+          </div>
+          <div className="footer-contact-column">
+            <section className="footer-contact" id="footer-contact" aria-labelledby="footer-contact-title">
+              <h2 id="footer-contact-title">Get in Touch</h2>
+              <a href={`tel:${business.phone}`}><FiPhone aria-hidden="true" /><span>{business.phoneDisplay}</span></a>
+              <a href={`mailto:${business.email}`}><FiMail aria-hidden="true" /><span>{business.email}</span></a>
+              <p><FiMapPin aria-hidden="true" /><span>{business.address}</span></p>
+            </section>
+          </div>
+          <div className="footer-newsletter-column">
+            <section className="footer-newsletter" aria-labelledby="footer-newsletter-title">
+              <h2 id="footer-newsletter-title">Stay Updated</h2>
+              <p>Get the latest updates on new plants,<br />offers and more.</p>
+              <form onSubmit={subscribe}>
+                <FiMail aria-hidden="true" />
+                <input type="email" name="email" placeholder="Enter your email" aria-label="Email for plant updates" required />
+                <button type="submit">Subscribe<FiArrowRight aria-hidden="true" /></button>
+              </form>
+            </section>
           </div>
         </div>
-        <div className="footer-link-columns">
-          <nav aria-label="Quick links">
-            <h2>Quick Links</h2>
-            <ul>
-              {[["Home", "/"], ["Shop All", "/collection"], ["Plant Collection", "/collection"], ["Checkout", "/checkout"], ["Contact Us", "/contact"]].map(([label, href]) => (
-                <li key={label}><Link href={href}>{label}<FiChevronRight aria-hidden="true" /></Link></li>
-              ))}
-            </ul>
-          </nav>
-          <nav aria-label="Customer care">
-            <h2>Customer Care</h2>
-            <ul>
-              {careLinks.map(([label, Icon]) => (
-                <li key={label}><a href={contactUrl(`Hello, I'd like information about ${label.toLowerCase()}.`)} target="_blank" rel="noopener noreferrer"><Icon aria-hidden="true" />{label}</a></li>
-              ))}
-            </ul>
-          </nav>
-        </div>
-        <section className="footer-contact" id="footer-contact" aria-labelledby="footer-contact-title">
-          <h2 id="footer-contact-title">Get in Touch</h2>
-          <a href={`tel:${business.phone}`}><FiPhone aria-hidden="true" /><span>{business.phoneDisplay}</span></a>
-          <a href={`mailto:${business.email}`}><FiMail aria-hidden="true" /><span>{business.email}</span></a>
-          <p><FiMapPin aria-hidden="true" /><span>{business.address}</span></p>
-        </section>
-        <section className="footer-newsletter" aria-labelledby="footer-newsletter-title">
-          <h2 id="footer-newsletter-title">Stay Updated</h2>
-          <p>Get the latest updates on new plants,<br />offers and more.</p>
-          <form onSubmit={subscribe}>
-            <FiMail aria-hidden="true" />
-            <input type="email" name="email" placeholder="Enter your email" aria-label="Email for plant updates" required />
-            <button type="submit">Subscribe<FiArrowRight aria-hidden="true" /></button>
-          </form>
-        </section>
         <div className="footer-credits">
           <p>© {new Date().getFullYear()} {business.name}. All rights reserved.</p>
           <p>Made with <span aria-label="love">♥</span> in West Bengal</p>
