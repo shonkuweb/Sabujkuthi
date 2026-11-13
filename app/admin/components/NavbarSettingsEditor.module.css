@@ -1,0 +1,566 @@
+.editor {
+  color: #20352b;
+}
+
+.subTabs {
+  display: flex;
+  gap: 8px;
+  border-bottom: 2px solid #eef3ef;
+  margin-bottom: 24px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.subTabBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border: 0;
+  background: transparent;
+  font: 600 13px Inter, -apple-system, sans-serif;
+  color: #6a7c72;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -6px;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+
+.subTabBtn:hover {
+  color: #1a5c36;
+}
+
+.subTabBtnActive {
+  color: #1a5c36;
+  border-bottom-color: #26784a;
+}
+
+.cardSection {
+  background: #ffffff;
+  border: 1px solid #e2ede5;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.sectionHeader h3 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: #1c3624;
+}
+
+.sectionHeader p {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: #728479;
+}
+
+/* Add New Navbar Link Form Card */
+.addLinkFormCard {
+  background: #f4faf6;
+  border: 1.5px dashed #2e8b57;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 24px;
+  animation: fadeIn 0.2s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.addLinkHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.addLinkHeader h4 {
+  margin: 0;
+  font-size: 14.5px;
+  font-weight: 700;
+  color: #164227;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
+}
+
+@media (min-width: 640px) {
+  .formGrid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.formGroupFull {
+  grid-column: 1 / -1;
+}
+
+.typeSelectRow {
+  display: flex;
+  gap: 12px;
+  margin-top: 4px;
+  flex-wrap: wrap;
+}
+
+.typeRadioLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #355341;
+  background: #ffffff;
+  border: 1px solid #d2e4d8;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.typeRadioLabel:hover {
+  border-color: #26784a;
+}
+
+.typeRadioActive {
+  background: #eaf6ee;
+  border-color: #26784a;
+  color: #1c5e37;
+}
+
+/* Navbar Link Cards */
+.ctaCard {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid #e5ede7;
+  border-radius: 10px;
+  background: #fafcfb;
+  margin-bottom: 14px;
+  transition: border-color 0.15s;
+}
+
+.ctaCard:hover {
+  border-color: #cbded1;
+}
+
+.ctaCardTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.ctaCardTitleWrap {
+  flex: 1;
+  min-width: 200px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.ctaLabelInput {
+  flex: 1;
+  min-width: 180px;
+  padding: 8px 12px;
+  border: 1px solid #dce5df;
+  border-radius: 7px;
+  font: 600 14px Inter, -apple-system, sans-serif;
+  color: #1c3624;
+  outline: none;
+  background: #ffffff;
+}
+
+.ctaLabelInput:focus {
+  border-color: #26784a;
+}
+
+.typeBadge {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.badgeCollection {
+  background: #e7f5ec;
+  color: #1f6b3d;
+}
+
+.badgeCustom {
+  background: #f0f3f6;
+  color: #536471;
+}
+
+.ctaDetailRow {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+@media (min-width: 640px) {
+  .ctaDetailRow {
+    grid-template-columns: 1fr 1.5fr;
+  }
+}
+
+.ctaHrefInput {
+  padding: 7px 10px;
+  border: 1px solid #e1e9e3;
+  border-radius: 6px;
+  font: 12.5px monospace;
+  color: #435e4d;
+  background: #ffffff;
+  outline: none;
+}
+
+.ctaHrefInput:focus {
+  border-color: #26784a;
+}
+
+.ctaDescInput {
+  padding: 7px 10px;
+  border: 1px solid #e1e9e3;
+  border-radius: 6px;
+  font: 12.5px Inter, -apple-system, sans-serif;
+  color: #435e4d;
+  background: #ffffff;
+  outline: none;
+}
+
+.ctaDescInput:focus {
+  border-color: #26784a;
+}
+
+.ctaActionsBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 10px;
+  border-top: 1px solid #edf4ef;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.switchWrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.switch {
+  width: 44px;
+  height: 26px;
+  padding: 3px;
+  background: #c5d2c9;
+  border: 0;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.switch span {
+  display: block;
+  width: 20px;
+  height: 20px;
+  background: #fff;
+  border-radius: 50%;
+  transition: transform 0.15s;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.switch[aria-checked="true"] {
+  background: #26784a;
+}
+
+.switch[aria-checked="true"] span {
+  transform: translateX(18px);
+}
+
+/* Button variants */
+.btnGroup {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.btnPrimary,
+.btnSecondary,
+.btnDanger,
+.btnSuccess {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 7px;
+  font: 600 12.5px Inter, -apple-system, sans-serif;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.btnPrimary {
+  border: 1px solid #26784a;
+  background: #26784a;
+  color: #ffffff;
+}
+
+.btnPrimary:hover {
+  background: #1c603a;
+}
+
+.btnSecondary {
+  border: 1px solid #dce5df;
+  background: #ffffff;
+  color: #496354;
+}
+
+.btnSecondary:hover {
+  background: #f2f7f4;
+}
+
+.btnDanger {
+  border: 1px solid #f2dede;
+  background: #fff5f5;
+  color: #b33924;
+}
+
+.btnDanger:hover {
+  background: #fee;
+  border-color: #ebccd1;
+}
+
+.btnSuccess {
+  border: 1px solid #228b50;
+  background: #228b50;
+  color: #ffffff;
+}
+
+.btnSuccess:hover {
+  background: #1b7342;
+}
+
+/* Product list & cards */
+.productList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.productRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  background: #ffffff;
+  border: 1px solid #e5ede7;
+  border-radius: 8px;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.productInfo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 220px;
+  flex: 1;
+}
+
+.productThumb {
+  width: 48px;
+  height: 48px;
+  border-radius: 6px;
+  object-fit: cover;
+  background: #f0f4f1;
+}
+
+.productTitle {
+  margin: 0;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #1a3523;
+}
+
+.productMeta {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: #6a7f72;
+}
+
+.productStockBadge {
+  display: inline-block;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  margin-left: 6px;
+}
+
+.stockIn {
+  background: #eaf6ee;
+  color: #1e7041;
+}
+
+.stockOut {
+  background: #fef0ed;
+  color: #b73e27;
+}
+
+.productPrice {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #1d5f39;
+}
+
+.emptyState {
+  text-align: center;
+  padding: 40px 16px;
+  color: #6a7e72;
+}
+
+/* Modal styles for editing product */
+.modalBackdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 30, 22, 0.55);
+  backdrop-filter: blur(3px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  padding: 16px;
+}
+
+.modalContent {
+  background: #ffffff;
+  width: 100%;
+  max-width: 540px;
+  max-height: 90vh;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.modalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid #edf4ef;
+}
+
+.modalHeader h4 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: #173722;
+}
+
+.modalCloseBtn {
+  border: 0;
+  background: transparent;
+  color: #6a7c71;
+  font-size: 18px;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+}
+
+.modalBody {
+  padding: 20px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-bottom: 14px;
+}
+
+.field label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #27402f;
+}
+
+.input,
+.textarea,
+.select {
+  width: 100%;
+  padding: 9px 12px;
+  border: 1px solid #dce5df;
+  border-radius: 7px;
+  font: 13.5px Inter, -apple-system, sans-serif;
+  color: #20352b;
+  outline: none;
+}
+
+.input:focus,
+.textarea:focus,
+.select:focus {
+  border-color: #26784a;
+}
+
+.textarea {
+  min-height: 70px;
+  resize: vertical;
+}
+
+.saveBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 18px;
+  border-top: 1px solid #eef3ef;
+  margin-top: 20px;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.alertSuccess {
+  padding: 10px 14px;
+  background: #e9f5ed;
+  color: #216d42;
+  border-radius: 7px;
+  font-size: 12.5px;
+  margin-bottom: 16px;
+}
+
+.alertError {
+  padding: 10px 14px;
+  background: #fff2ef;
+  color: #a63d2b;
+  border-radius: 7px;
+  font-size: 12.5px;
+  margin-bottom: 16px;
+}

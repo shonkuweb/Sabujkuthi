@@ -131,3 +131,20 @@ model SiteVisit {
   count          Int    @default(1)
   uniqueVisitors Int    @default(1)
 }
+
+model BlogPost {
+  id          String   @id @default(uuid())
+  slug        String   @unique
+  title       String
+  excerpt     String?
+  content     String
+  coverImage  String?
+  category    String?  @default("Plant Care")
+  author      String?  @default("SabujKuthi Nursery")
+  isPublished Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([isPublished, createdAt])
+  @@index([slug])
+}

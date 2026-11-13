@@ -1,0 +1,133 @@
+.page {
+  padding: 24px 16px 48px;
+  background: #f8fbf9;
+  min-height: 80vh;
+}
+
+.inner {
+  max-width: 1600px;
+  margin: 0 auto;
+}
+
+.breadcrumbs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #7b8e81;
+  margin-bottom: 20px;
+}
+
+.breadcrumbs a {
+  color: #26784a;
+  text-decoration: none;
+}
+
+.hero {
+  background: linear-gradient(135deg, #f0f7f2 0%, #e8f5ec 100%);
+  border: 1px solid #d2e7d7;
+  border-radius: 16px;
+  padding: 32px 28px;
+  margin-bottom: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #1b5e38;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  width: fit-content;
+  box-shadow: 0 2px 6px rgba(38, 120, 74, 0.08);
+}
+
+.title {
+  font-size: clamp(24px, 2.5vw, 36px);
+  font-weight: 800;
+  color: #143620;
+  margin: 4px 0;
+  letter-spacing: -0.02em;
+}
+
+.description {
+  font-size: 14.5px;
+  color: #4b6653;
+  line-height: 1.6;
+  max-width: 720px;
+  margin: 0;
+}
+
+.metaRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e3ede6;
+}
+
+.count {
+  font-size: 13.5px;
+  color: #63776a;
+  font-weight: 600;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+@media (min-width: 768px) {
+  .grid {
+    grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+    gap: 22px;
+  }
+}
+
+.empty {
+  text-align: center;
+  padding: 60px 20px;
+  background: #ffffff;
+  border: 1px dashed #dce5df;
+  border-radius: 14px;
+  color: #6a7c71;
+}
+
+.empty h3 {
+  font-size: 17px;
+  color: #1a3622;
+  margin: 12px 0 6px;
+}
+
+.empty p {
+  font-size: 13.5px;
+  margin: 0 0 20px;
+}
+
+.ctaBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 22px;
+  background: #26784a;
+  color: #ffffff;
+  border-radius: 8px;
+  font-size: 13.5px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background 0.15s;
+}
+
+.ctaBtn:hover {
+  background: #1b5e38;
+}

@@ -7,6 +7,7 @@ import {
   FiChevronDown,
   FiChevronRight,
   FiCreditCard,
+  FiFileText,
   FiHome,
   FiLayers,
   FiLogOut,
@@ -27,10 +28,45 @@ import SiteFooter from "./SiteFooter";
 import { useCategories } from "../hooks/useCategories";
 import { useCart } from "../context/CartContext";
 import { useCustomer } from "../context/CustomerContext";
+import { useStoreSettings } from "../context/StoreSettingsContext";
 import { buildCategoryTree } from "../../lib/category-tree.mjs";
 
 const StoreSearchContext = createContext(null);
 export function useStoreSearch() { return useContext(StoreSearchContext); }
+
+function CategoryFlyoutItem({ category, depth = 1, onNavigate }) {
+  const hasChildren = Array.isArray(category.children) && category.children.length > 0;
+  return (
+    <li className={`nav-flyout-item ${hasChildren ? 'has-children' : ''}`} role="none">
+      <Link
+        href={`/category/${category.slug}`}
+        className="nav-flyout-link"
+        role="menuitem"
+        onClick={onNavigate}
+      >
+        <span className="nav-flyout-label">{category.name}</span>
+        {hasChildren && <FiChevronRight className="nav-flyout-arrow" aria-hidden="true" />}
+      </Link>
+      {hasChildren && (
+        <ul
+          className={`nav-flyout-menu level-${depth + 1}`}
+          role="menu"
+          aria-label={`${category.name} subcategories`}
+          style={{ zIndex: 1000 + depth * 10 }}
+        >
+          {category.children.map(child => (
+            <CategoryFlyoutItem
+              key={child.id}
+              category={child}
+              depth={depth + 1}
+              onNavigate={onNavigate}
+            />
+          ))}
+        </ul>
+      )}
+    </li>
+  );
+}
 
 export default function StoreShell({ children }) {
   const pathname = usePathname();
@@ -52,6 +88,8 @@ export default function StoreShell({ children }) {
   };
   const { items, setIsSidebarOpen } = useCart();
   const { customer, logout } = useCustomer();
+  const { navbarSettings } = useStoreSettings();
+  const navItems = (navbarSettings?.items || []).filter(item => item.enabled !== false);
   const [searchQuery, setSearchQuery] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
   const [categoriesExpanded, setCategoriesExpanded] = useState(false);
@@ -177,19 +215,94 @@ export default function StoreShell({ children }) {
 
             <div className="desktop-header-actions">
               <Link
-                href={customer ? "/account" : "/login"}
-                className="desktop-header-action-item customer-account-btn"
-                aria-label={customer ? `My Account (${customer.name || customer.phone})` : "Customer Login / Sign Up"}
-                title={customer ? "My Account" : "Customer Login"}
+                href="/contact"
+                className={`desktop-header-action-item ${pathname === '/contact' ? 'active' : ''}`}
+                aria-label="Contact Us"
+                title="Contact Us"
               >
-                <span className="desktop-user-icon-wrap">
-                  <FiUser className="desktop-action-icon" aria-hidden="true" />
-                  {customer && <span className="user-active-dot" aria-hidden="true" />}
-                </span>
-                <span className="desktop-action-label">
-                  {customer ? (customer.name ? customer.name.split(' ')[0] : customer.phone) : "Sign In"}
-                </span>
+                <FiPhoneCall className="desktop-action-icon" aria-hidden="true" />
+                <span className="desktop-action-label">Contact Us</span>
               </Link>
+
+              <div className="desktop-profile-dropdown-wrap">
+                <Link
+                  href={customer ? "/account" : "/login"}
+                  className={`desktop-header-action-item customer-account-btn ${pathname === '/login' || pathname === '/account' ? 'active' : ''}`}
+                  aria-label={customer ? `My Account (${customer.name || customer.phone})` : "Customer Login / Sign Up"}
+                  title={customer ? "My Account" : "Customer Login"}
+                >
+                  <span className="desktop-user-icon-wrap">
+                    <FiUser className="desktop-action-icon" aria-hidden="true" />
+                    {customer && <span className="user-active-dot" aria-hidden="true" />}
+                  </span>
+                  <span className="desktop-action-label">
+                    {customer ? (customer.name ? customer.name.split(' ')[0] : customer.phone) : "Sign In"}
+                  </span>
+                  <FiChevronDown className="profile-chevron-icon" aria-hidden="true" />
+                </Link>
+
+                <div className="desktop-profile-flyout">
+                  {customer ? (
+                    <>
+                      <div className="profile-flyout-header">
+                        <div className="profile-flyout-avatar">
+                          {(customer.name ? customer.name[0] : customer.phone[0] || 'U').toUpperCase()}
+                        </div>
+                        <div className="profile-flyout-details">
+                          <span className="profile-flyout-name">{customer.name || 'Valued Customer'}</span>
+                          <span className="profile-flyout-phone">+91 {customer.phone}</span>
+                        </div>
+                      </div>
+                      <div className="profile-flyout-divider" />
+                      <Link href="/account" className="profile-flyout-item">
+                        <FiUser className="profile-flyout-icon" />
+                        <span>My Profile & Orders</span>
+                      </Link>
+                      <Link href="/track-order" className="profile-flyout-item">
+                        <FiTruck className="profile-flyout-icon" />
+                        <span>Track Order</span>
+                      </Link>
+                      <div className="profile-flyout-divider" />
+                      <button type="button" className="profile-flyout-item logout" onClick={handleLogout}>
+                        <FiLogOut className="profile-flyout-icon" />
+                        <span>Sign Out</span>
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <div className="profile-flyout-guest-header">
+                        <span className="profile-guest-title">Customer Account</span>
+                        <span className="profile-guest-sub">Login to manage orders & tracking</span>
+                      </div>
+                      <div className="profile-flyout-divider" />
+                      <Link href="/login" className="profile-flyout-item">
+                        <FiUser className="profile-flyout-icon" />
+                        <span>Sign In / Sign Up</span>
+                      </Link>
+                      <Link href="/track-order" className="profile-flyout-item">
+                        <FiTruck className="profile-flyout-icon" />
+                        <span>Track Order</span>
+                      </Link>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              <button
+                type="button"
+                className="desktop-header-action-item desktop-cart-btn"
+                aria-label={`Open cart${cartCount > 0 ? `, ${cartCount} items` : ''}`}
+                title="Your Cart"
+                onClick={openCart}
+              >
+                <span className="desktop-cart-icon-wrap">
+                  <FiShoppingBag className="desktop-action-icon" aria-hidden="true" />
+                  {cartCount > 0 && (
+                    <span className="desktop-cart-badge">{cartCount > 99 ? '99+' : cartCount}</span>
+                  )}
+                </span>
+                <span className="desktop-action-label">Cart</span>
+              </button>
             </div>
           </div>
         </header>
@@ -206,82 +319,142 @@ export default function StoreShell({ children }) {
                 <FiHome className="desktop-nav-icon" aria-hidden="true" />
                 <span>Home</span>
               </Link>
-              <Link
-                href="/collection"
-                className={`desktop-nav-link ${pathname === '/collection' ? 'active' : ''}`}
-              >
-                <FaLeaf className="desktop-nav-icon" aria-hidden="true" />
-                <span>All Plants</span>
-              </Link>
-              <Link
-                href="/track-order"
-                className={`desktop-nav-link ${pathname === '/track-order' ? 'active' : ''}`}
-              >
-                <FiTruck className="desktop-nav-icon" aria-hidden="true" />
-                <span>Track Order</span>
-              </Link>
-              <Link
-                href="/contact"
-                className={`desktop-nav-link ${pathname === '/contact' ? 'active' : ''}`}
-              >
-                <FiPhoneCall className="desktop-nav-icon" aria-hidden="true" />
-                <span>Contact Us</span>
-              </Link>
+              <div className="desktop-nav-dropdown">
+                <Link
+                  href="/collection"
+                  className={`desktop-nav-link ${pathname === '/collection' || pathname.startsWith('/category/') ? 'active' : ''}`}
+                  aria-haspopup="true"
+                  aria-expanded="false"
+                >
+                  <FaLeaf className="desktop-nav-icon" aria-hidden="true" />
+                  <span>All Plants</span>
+                  <FiChevronDown className="desktop-dropdown-chevron" aria-hidden="true" />
+                </Link>
+
+                <ul className="nav-flyout-menu level-1" role="menu" aria-label="Plant categories">
+                  <li className="nav-flyout-item" role="none">
+                    <Link
+                      href="/collection"
+                      className="nav-flyout-link view-all-link"
+                      role="menuitem"
+                      onClick={() => setSearchQuery('')}
+                    >
+                      <FaLeaf className="nav-flyout-leaf-icon" aria-hidden="true" />
+                      <span className="nav-flyout-label"><strong>All Plants (Explore All)</strong></span>
+                    </Link>
+                  </li>
+                  {navCategoryTree.length > 0 && <li className="nav-flyout-divider" role="separator" aria-hidden="true" />}
+                  {navCategoryTree.map(parentCat => (
+                    <CategoryFlyoutItem
+                      key={parentCat.id}
+                      category={parentCat}
+                      depth={1}
+                      onNavigate={() => setSearchQuery('')}
+                    />
+                  ))}
+                </ul>
+              </div>
+
+              {navItems.map((item) => (
+                <Link
+                  key={item.id}
+                  href={item.href}
+                  className={`desktop-nav-link ${pathname === item.href || (item.href === '/blog' && pathname.startsWith('/blog')) ? 'active' : ''}`}
+                >
+                  <span>{item.label}</span>
+                </Link>
+              ))}
             </div>
           </div>
         </nav>
 
         {/* Homepage Circular Categories Row */}
         {isHome && displayHomeCategories.length > 0 && (
-          <section id="categories" className="category-row" aria-label="Plant categories">
-            {displayHomeCategories.map((category, index) => (
-              <Link
-                key={category.id}
-                href={`/category/${category.slug}`}
-                className="category-modern"
-                onClick={() => setSearchQuery('')}
-              >
-                <div className={`category-icon-modern tone-${index % 2 === 0 ? 'a' : 'b'}`}>
-                  {category.image ? (
-                    <img
-                      src={category.image}
-                      alt=""
-                      style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 'inherit' }}
-                    />
-                  ) : (
-                    <FaLeaf />
-                  )}
+          <section id="categories" className="category-strip-section" aria-label="Shop by category">
+            <div className="category-strip-inner">
+              <div className="category-strip-header">
+                <div className="category-strip-title-group">
+                  <span className="category-strip-badge">
+                    <FaLeaf className="category-strip-badge-icon" aria-hidden="true" />
+                    <span>Categories</span>
+                  </span>
+                  <h2 className="category-strip-title">Shop by Category</h2>
                 </div>
-                <span className="category-name">{category.name}</span>
-              </Link>
-            ))}
+                <Link href="/collection" className="category-strip-view-all" aria-label="Explore all plants" onClick={() => setSearchQuery('')}>
+                  <span>View All</span>
+                  <FiChevronRight className="category-strip-view-icon" aria-hidden="true" />
+                </Link>
+              </div>
+
+              <div className="category-row">
+                {displayHomeCategories.map((category, index) => (
+                  <Link
+                    key={category.id}
+                    href={`/category/${category.slug}`}
+                    className="category-modern"
+                    onClick={() => setSearchQuery('')}
+                  >
+                    <div className={`category-icon-modern tone-${index % 2 === 0 ? 'a' : 'b'}`}>
+                      {category.image ? (
+                        <img
+                          src={category.image}
+                          alt={category.name}
+                          loading="lazy"
+                        />
+                      ) : (
+                        <FaLeaf aria-hidden="true" />
+                      )}
+                    </div>
+                    <span className="category-name">{category.name}</span>
+                  </Link>
+                ))}
+              </div>
+            </div>
           </section>
         )}
 
         {/* Circular Subcategories Row Under Navbar when viewing a Category with Subcategories */}
         {!isHome && currentSubcategories.length > 0 && (
-          <section id="subcategories" className="category-row" aria-label={`${currentCategory?.name || 'Category'} subcategories`}>
-            {currentSubcategories.map((sub, index) => (
-              <Link
-                key={sub.id}
-                href={`/category/${sub.slug}`}
-                className="category-modern"
-                onClick={() => setSearchQuery('')}
-              >
-                <div className={`category-icon-modern tone-${index % 2 === 0 ? 'a' : 'b'}`}>
-                  {sub.image ? (
-                    <img
-                      src={sub.image}
-                      alt=""
-                      style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 'inherit' }}
-                    />
-                  ) : (
-                    <FaLeaf />
-                  )}
+          <section id="subcategories" className="category-strip-section" aria-label={`${currentCategory?.name || 'Category'} subcategories`}>
+            <div className="category-strip-inner">
+              <div className="category-strip-header">
+                <div className="category-strip-title-group">
+                  <span className="category-strip-badge">
+                    <FaLeaf className="category-strip-badge-icon" aria-hidden="true" />
+                    <span>Subcategories</span>
+                  </span>
+                  <h2 className="category-strip-title">{currentCategory?.name ? `Shop ${currentCategory.name}` : "Shop by Category"}</h2>
                 </div>
-                <span className="category-name">{sub.name}</span>
-              </Link>
-            ))}
+                <Link href="/collection" className="category-strip-view-all" aria-label="Explore all plants" onClick={() => setSearchQuery('')}>
+                  <span>All Plants</span>
+                  <FiChevronRight className="category-strip-view-icon" aria-hidden="true" />
+                </Link>
+              </div>
+
+              <div className="category-row">
+                {currentSubcategories.map((sub, index) => (
+                  <Link
+                    key={sub.id}
+                    href={`/category/${sub.slug}`}
+                    className="category-modern"
+                    onClick={() => setSearchQuery('')}
+                  >
+                    <div className={`category-icon-modern tone-${index % 2 === 0 ? 'a' : 'b'}`}>
+                      {sub.image ? (
+                        <img
+                          src={sub.image}
+                          alt={sub.name}
+                          loading="lazy"
+                        />
+                      ) : (
+                        <FaLeaf aria-hidden="true" />
+                      )}
+                    </div>
+                    <span className="category-name">{sub.name}</span>
+                  </Link>
+                ))}
+              </div>
+            </div>
           </section>
         )}
 
@@ -402,6 +575,19 @@ export default function StoreShell({ children }) {
                 )}
               </div>
 
+              {/* Dynamic Navbar CTA Items */}
+              {navItems.map(item => (
+                <Link key={item.id} href={item.href} className="side-menu-link" onClick={closeMenu}>
+                  <div className="side-menu-item-left">
+                    <span className="side-menu-icon-wrap">
+                      {item.id === 'blog' ? <FiFileText /> : <FaLeaf />}
+                    </span>
+                    <span className="side-menu-text">{item.label}</span>
+                  </div>
+                  <FiChevronRight className="side-menu-arrow" />
+                </Link>
+              ))}
+
               {/* 5. Checkout */}
               <Link href="/checkout" className="side-menu-link" onClick={closeMenu}>
                 <div className="side-menu-item-left">
@@ -411,16 +597,7 @@ export default function StoreShell({ children }) {
                 <FiChevronRight className="side-menu-arrow" />
               </Link>
 
-              {/* 6. Track Your Order */}
-              <Link href="/track-order" className="side-menu-link" onClick={closeMenu}>
-                <div className="side-menu-item-left">
-                  <span className="side-menu-icon-wrap"><FiTruck /></span>
-                  <span className="side-menu-text">Track Your Order</span>
-                </div>
-                <FiChevronRight className="side-menu-arrow" />
-              </Link>
-
-              {/* 7. Contact Us */}
+              {/* 6. Contact Us */}
               <Link href="/contact" className="side-menu-link" onClick={closeMenu}>
                 <div className="side-menu-item-left">
                   <span className="side-menu-icon-wrap"><FiPhoneCall /></span>
@@ -429,7 +606,7 @@ export default function StoreShell({ children }) {
                 <FiChevronRight className="side-menu-arrow" />
               </Link>
 
-              {/* 8. Account */}
+              {/* 7. Account */}
               <Link
                 href={customer ? "/account" : "/login"}
                 className="side-menu-link"
@@ -449,23 +626,35 @@ export default function StoreShell({ children }) {
             {customer ? (
               <div className="menu-user-card">
                 <div className="menu-user-info">
-                  <div className="menu-user-avatar">
-                    {(customer.name ? customer.name[0] : customer.phone[0] || 'U').toUpperCase()}
+                  <div className="menu-user-left" style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+                    <div className="menu-user-avatar">
+                      {(customer.name ? customer.name[0] : customer.phone[0] || 'U').toUpperCase()}
+                    </div>
+                    <div className="menu-user-details">
+                      <p className="menu-user-name">{customer.name || 'Valued Customer'}</p>
+                      <p className="menu-user-phone">+91 {customer.phone}</p>
+                    </div>
                   </div>
-                  <div className="menu-user-details">
-                    <p className="menu-user-name">{customer.name || 'Valued Customer'}</p>
-                    <p className="menu-user-phone">+91 {customer.phone}</p>
-                  </div>
+                  <button
+                    type="button"
+                    className="menu-logout-btn"
+                    onClick={handleLogout}
+                    aria-label="Log out of account"
+                    title="Log out"
+                  >
+                    <FiLogOut />
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  className="menu-logout-btn"
-                  onClick={handleLogout}
-                  aria-label="Log out of account"
-                  title="Log out"
-                >
-                  <FiLogOut />
-                </button>
+                <div className="menu-user-profile-links">
+                  <Link href="/account" className="menu-user-pill-link" onClick={closeMenu}>
+                    <FiUser />
+                    <span>My Profile</span>
+                  </Link>
+                  <Link href="/track-order" className="menu-user-pill-link" onClick={closeMenu}>
+                    <FiTruck />
+                    <span>Track Order</span>
+                  </Link>
+                </div>
               </div>
             ) : (
               <div className="menu-guest-actions">

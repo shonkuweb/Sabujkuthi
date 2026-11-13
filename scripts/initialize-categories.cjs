@@ -111,7 +111,58 @@ try {
       "count" INTEGER NOT NULL DEFAULT 1,
       "uniqueVisitors" INTEGER NOT NULL DEFAULT 1
     );
-    CREATE UNIQUE INDEX IF NOT EXISTS "SiteVisit_date_key" ON "SiteVisit"("date");`);
+    CREATE UNIQUE INDEX IF NOT EXISTS "SiteVisit_date_key" ON "SiteVisit"("date");
+    CREATE TABLE IF NOT EXISTS "BlogPost" (
+      "id" TEXT NOT NULL PRIMARY KEY,
+      "slug" TEXT NOT NULL,
+      "title" TEXT NOT NULL,
+      "excerpt" TEXT,
+      "content" TEXT NOT NULL,
+      "coverImage" TEXT,
+      "category" TEXT DEFAULT 'Plant Care',
+      "author" TEXT DEFAULT 'SabujKuthi Nursery',
+      "isPublished" BOOLEAN NOT NULL DEFAULT true,
+      "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE UNIQUE INDEX IF NOT EXISTS "BlogPost_slug_key" ON "BlogPost"("slug");
+    CREATE INDEX IF NOT EXISTS "BlogPost_isPublished_createdAt_idx" ON "BlogPost"("isPublished", "createdAt");`);
+
+    // Seed default blog articles if none exist
+    const blogCount = db.prepare('SELECT COUNT(*) AS count FROM "BlogPost"').get().count;
+    if (blogCount === 0) {
+      const insertBlog = db.prepare(`INSERT INTO "BlogPost" (id, slug, title, excerpt, content, coverImage, category, author, isPublished, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`);
+      insertBlog.run(
+        randomUUID(),
+        'adenium-desert-rose-care-guide-india',
+        'Complete Guide to Adenium Desert Rose Care in India: Sunlight, Soil & Watering',
+        'Adenium, famously known as the Desert Rose, is one of the most rewarding blooming plants for Indian homes. Learn how to care for caudex, soil mix, and watering.',
+        `Adenium obesum, popularly known as the Desert Rose or 'Bonsai of the Tropics', has earned massive popularity among gardening enthusiasts across India. With its sculptural swollen caudex and striking, vivid blooms, an Adenium looks like a living sculpture on your balcony or terrace.\n\n### 1. Optimal Sunlight Requirements\nAdeniums are desert-native succulents. They crave direct, unfiltered sunlight for at least 5 to 6 hours every day. Placed in full sun, the plant stays compact and develops abundant flower buds. If kept in partial shade, the branches become leggy and weak, and flowering drops significantly.\n\n### 2. Porous, Fast-Draining Soil Mix\nThe most critical aspect of growing healthy Adeniums is proper drainage. A waterlogged pot will cause fatal root and caudex rot within days. We recommend a porous growing medium:\n- 40% coarse river sand or cinder\n- 30% garden soil or red soil\n- 20% well-rotted cow dung compost or vermicompost\n- 10% perlite or neem cake powder\n\nEnsure the pot has large, unobstructed drainage holes at the bottom.\n\n### 3. Smart Watering Discipline\nFollow the 'soak and dry' method: water deeply until water drains from the bottom, then wait until the top 2 inches of soil feel completely dry before watering again. During the winter dormancy (December to January), reduce watering to once every 10–14 days.\n\n### 4. Feeding for Maximum Blooms\nApply an organic mixed fertilizer rich in phosphorus and potassium every 3 to 4 weeks during the growing season (February to October). A spoonful of bone meal combined with neem cake and potash works wonders for vibrant, multi-layered flowers.`,
+        'https://images.unsplash.com/photo-1545241047-6083a3684587?w=1200&auto=format&fit=crop&q=80',
+        'Plant Care',
+        'SabujKuthi Nursery'
+      );
+      insertBlog.run(
+        randomUUID(),
+        'how-to-use-mixed-organic-fertilizer-blooms',
+        'How to Use Mixed Organic Fertilizer for Spectacular Flowering & Root Health',
+        'Discover the exact organic nutrient ratio and monthly feeding schedule that professional nursery growers use for robust plant growth and bountiful flowers.',
+        `Every plant lover dreams of a garden filled with lush foliage and vibrant blooms. While chemical fertilizers offer quick bursts of green, they often deplete soil microbiology over time. That is why professional nursery growers rely on carefully balanced organic mixed fertilizers.\n\n### Why Balanced Mixed Fertilizer Matters\nUnlike single-source fertilizers, a specialized mixed fertilizer provides a holistic spectrum of primary macronutrients (Nitrogen, Phosphorus, Potassium) alongside secondary micronutrients like Calcium, Magnesium, and Zinc.\n\n- **Nitrogen (N):** Fuels vigorous new leaf growth and deep chlorophyll production.\n- **Phosphorus (P):** Stimulates strong, branching root systems and early flower bud set.\n- **Potassium (K):** Strengthens cell walls, disease resistance, and intensifies bloom colors.\n\n### Monthly Feeding Schedule for Potted Plants\n1. **Loosen the Topsoil:** Gently scratch the top 1–2 inches of soil around the rim of the pot, keeping away from the main stem.\n2. **Apply the Fertilizer:** For a standard 8–10 inch pot, sprinkle 2 tablespoons of mixed organic fertilizer evenly around the pot perimeter.\n3. **Mix & Water In:** Blend the fertilizer with the loosened topsoil and immediately water thoroughly to activate the microbial action.\n4. **Repeat Monthly:** Apply once every 25–30 days during active growing seasons.`,
+        'https://images.unsplash.com/photo-1585320806297-9794b3e4eeae?w=1200&auto=format&fit=crop&q=80',
+        'Fertilizers',
+        'SabujKuthi Nursery'
+      );
+      insertBlog.run(
+        randomUUID(),
+        'monsoon-gardening-tips-potted-plants',
+        'Monsoon Gardening Tips: Protecting Your Potted Plants from Root Rot and Pests',
+        'Monsoon brings refreshing rains, but excess water can threaten potted plants. Follow these essential tips to keep your garden lush and rot-free during the rainy season.',
+        `The monsoon season brings a welcome respite from the scorching summer heat, and outdoor gardens burst into vibrant shades of green. However, excessive rain and prolonged dampness also introduce serious challenges like root fungal rot, leaf spot, and pest infestations.\n\n### 1. Check and Clear Pot Drainage Holes\nPersistent rain will quickly drown plant roots if drainage holes are clogged with mud or compacted soil. Lift each pot and ensure water drains freely within seconds. Elevate pots using pot stands or bricks so water flows away easily.\n\n### 2. Move Sensitive Plants Under Semi-Shade\nSucculents, Adeniums, and delicate indoor plants cannot tolerate daily torrential rainfall. Move them under a balcony roof, verandah, or translucent greenhouse sheet where they get bright light without receiving direct downpours.\n\n### 3. Apply Organic Neem Oil Spray\nHigh humidity is the breeding ground for fungal spores, aphids, and caterpillars. Spray your plants every 10–12 days with a solution of cold-pressed neem oil (5 ml per litre of water mixed with 2 drops of mild liquid soap). Always spray early in the morning or late evening.\n\n### 4. Prune Yellowing and Decaying Leaves\nPrune away any dead, yellow, or soggy foliage near the soil surface. This improves air circulation around the plant base and prevents fungal spores from spreading to healthy stems.`,
+        'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=1200&auto=format&fit=crop&q=80',
+        'Gardening Tips',
+        'SabujKuthi Nursery'
+      );
+    }
     const customerColumns = db.prepare('PRAGMA table_info(Customer)').all();
     if (customerColumns.length) {
       if (!customerColumns.some(col => col.name === 'state')) db.exec('ALTER TABLE "Customer" ADD COLUMN "state" TEXT');

@@ -6,6 +6,7 @@ import {
   FiArrowUpRight,
   FiBox,
   FiChevronLeft,
+  FiFileText,
   FiGrid,
   FiMenu,
   FiSettings,
@@ -19,6 +20,7 @@ import DashboardPanel from "./components/DashboardPanel";
 import CategoriesPanel from "./components/CategoriesPanel";
 import InventoryPanel from "./components/InventoryPanel";
 import OrdersPanel from "./components/OrdersPanel";
+import BlogsPanel from "./components/BlogsPanel";
 import StoreSettingsPanel from "./components/StoreSettingsPanel";
 
 const tabs = [
@@ -26,6 +28,7 @@ const tabs = [
   { id: "inventory", label: "Inventory", icon: FiBox },
   { id: "category", label: "Categories", icon: FiGrid },
   { id: "orders", label: "Orders", icon: FiShoppingBag },
+  { id: "blogs", label: "Blogs", icon: FiFileText },
   { id: "settings", label: "Store Settings", icon: FiSettings },
 ];
 
@@ -221,6 +224,8 @@ export default function AdminPage() {
                   <InventoryPanel />
                 ) : id === "orders" ? (
                   <OrdersPanel active={activeTab === "orders"} />
+                ) : id === "blogs" ? (
+                  <BlogsPanel active={activeTab === "blogs"} />
                 ) : id === "settings" ? (
                   <StoreSettingsPanel active={activeTab === "settings"} />
                 ) : (

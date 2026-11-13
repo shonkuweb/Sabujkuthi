@@ -1,14 +1,16 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import { FiArrowUpRight, FiImage, FiLock, FiPercent, FiTruck, FiVideo, FiX } from "react-icons/fi";
+import { FiArrowUpRight, FiImage, FiLock, FiNavigation, FiPercent, FiTruck, FiVideo, FiX } from "react-icons/fi";
 import VideoSettingsEditor from "./VideoSettingsEditor";
 import HeroSettingsEditor from "./HeroSettingsEditor";
 import DeliverySettingsEditor from "./DeliverySettingsEditor";
 import PasswordSettingsEditor from "./PasswordSettingsEditor";
 import OffersSettingsEditor from "./OffersSettingsEditor";
+import NavbarSettingsEditor from "./NavbarSettingsEditor";
 import styles from "./StoreSettingsPanel.module.css";
 
 const settings = [
+  { id: 'navbar', title: 'Navbar Settings', description: 'Navbar CTA text, collection pages and assigned products', icon: FiNavigation },
   { id: 'offers', title: 'Offers & Discounts', description: 'Announcement bar text, discount rules and progress nudges', icon: FiPercent },
   { id: 'hero', title: 'Hero Banner Editing', description: 'Banner images and homepage tickers', icon: FiImage },
   { id: 'delivery', title: 'Delivery & Shipping', description: 'Standard charges and free delivery conditions', icon: FiTruck },
@@ -51,13 +53,14 @@ export default function StoreSettingsPanel({ active }) {
         <strong>{title}</strong><span className={styles.description}>{description}</span>
       </button>)}
     </div>
-    {current && <dialog ref={dialogRef} className={`${styles.modal} ${selected === 'hero' ? styles.modalHero : ''}`}
+    {current && <dialog ref={dialogRef} className={`${styles.modal} ${selected === 'hero' || selected === 'navbar' ? styles.modalHero : ''}`}
       aria-labelledby="store-setting-title"
       onCancel={event => { event.preventDefault(); close(); }}
       onClick={event => { if (event.target === event.currentTarget) close(); }}
     >
       <header className={styles.modalHeader}><div><span>STORE SETTINGS</span><h2 id="store-setting-title">{current.title}</h2></div><button type="button" aria-label="Close setting panel" disabled={saving} onClick={close}><FiX aria-hidden="true" /></button></header>
       <div className={styles.content}>
+        {selected === 'navbar' && <NavbarSettingsEditor onSavingChange={setSaving} />}
         {selected === 'offers' && <OffersSettingsEditor onSavingChange={setSaving} />}
         {selected === 'hero' && <HeroSettingsEditor onSavingChange={setSaving} />}
         {selected === 'delivery' && <DeliverySettingsEditor onSavingChange={setSaving} />}
