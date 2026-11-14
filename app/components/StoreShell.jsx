@@ -380,7 +380,7 @@ export default function StoreShell({ children }) {
                   </span>
                   <h2 className="category-strip-title">Shop by Category</h2>
                 </div>
-                <Link href="/collection" className="category-strip-view-all" aria-label="Explore all plants" onClick={() => setSearchQuery('')}>
+                <Link href="/categories" className="category-strip-view-all" aria-label="View all categories" onClick={() => setSearchQuery('')}>
                   <span>View All</span>
                   <FiChevronRight className="category-strip-view-icon" aria-hidden="true" />
                 </Link>
@@ -562,6 +562,15 @@ export default function StoreShell({ children }) {
                         )}
                       </div>
                     ))}
+                    <Link
+                      href="/categories"
+                      className="accordion-category-item view-all"
+                      onClick={() => { closeMenu(); setSearchQuery(''); }}
+                    >
+                      <span className="accordion-category-dot">📂</span>
+                      <span className="accordion-category-name">All Categories</span>
+                      <FiChevronRight className="accordion-item-arrow" />
+                    </Link>
                     <Link
                       href="/collection"
                       className="accordion-category-item view-all"

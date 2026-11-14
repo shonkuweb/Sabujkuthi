@@ -28,7 +28,9 @@ export default function ShopByCategory({ categories, products }) {
           );
         })}
       </div>
-      <Link className={styles.cta} href="/collection">Explore our plants<FiArrowRight aria-hidden="true" /></Link>
+      <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', flexWrap: 'wrap' }}>
+        <Link className={styles.cta} href="/categories">View All Categories<FiArrowRight aria-hidden="true" /></Link>
+      </div>
     </section>
   );
 }
