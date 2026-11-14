@@ -104,12 +104,78 @@ model Order {
   total               Int
   currency            String   @default("INR")
   paymentMode         String
+  couponCode          String?
+  affiliateId         String?
+  affiliate           AffiliateAccount? @relation(fields: [affiliateId], references: [id], onDelete: SetNull)
   paidAt              DateTime?
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
 
   @@index([status, createdAt])
   @@index([phone])
+  @@index([affiliateId])
+  @@index([couponCode])
+}
+
+model AffiliateAccount {
+  id             String                     @id @default(uuid())
+  name           String
+  email          String
+  phone          String                     @unique
+  passwordHash   String
+  youtubeUrl     String?
+  instagramUrl   String?
+  facebookUrl    String?
+  message        String?
+  status         String                     @default("pending") // "pending", "approved", "rejected", "banned"
+  couponCode     String?                    @unique
+  warningMessage String?
+  banMessage     String?
+  rejectReason   String?
+  reviewedAt     DateTime?
+  programmes     AffiliateAccountProgramme[]
+  orders         Order[]
+  createdAt      DateTime                   @default(now())
+  updatedAt      DateTime                   @updatedAt
+
+  @@index([status, createdAt])
+  @@index([phone])
+}
+
+model AffiliateProgramme {
+  id                String                     @id @default(uuid())
+  title             String
+  description       String?
+  commissionType    String                     @default("percentage") // "percentage" | "fixed"
+  commissionValue   Float                      @default(10.0)
+  commissionPercent Float                      @default(10.0) // Keep for backward compatibility
+  discountType      String                     @default("percentage") // "percentage" | "fixed"
+  discountValue     Float                      @default(5.0)
+  discountPercent   Float                      @default(5.0) // Keep for backward compatibility
+  scopeType         String                     @default("all") // "all" | "category" | "products"
+  categoryId        String?
+  productIds        String?                    // Stored as JSON array string
+  minOrderValue     Int?                       @default(0) // In rupees
+  startDate         String?                    // YYYY-MM-DD
+  endDate           String?                    // YYYY-MM-DD
+  status            String                     @default("active") // "active", "inactive"
+  terms             String?
+  accounts          AffiliateAccountProgramme[]
+  createdAt         DateTime                   @default(now())
+  updatedAt         DateTime                   @updatedAt
+}
+
+model AffiliateAccountProgramme {
+  id          String             @id @default(uuid())
+  affiliateId String
+  programmeId String
+  joinedAt    DateTime           @default(now())
+  affiliate   AffiliateAccount   @relation(fields: [affiliateId], references: [id], onDelete: Cascade)
+  programme   AffiliateProgramme @relation(fields: [programmeId], references: [id], onDelete: Cascade)
+
+  @@unique([affiliateId, programmeId])
+  @@index([affiliateId])
+  @@index([programmeId])
 }
 
 model Customer {

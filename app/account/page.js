@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   FiArrowRight,
+  FiAward,
   FiCheckCircle,
   FiLogOut,
   FiMapPin,
@@ -107,6 +108,24 @@ export default function AccountPage() {
           <FiLogOut />
           <span>Log Out</span>
         </button>
+      </div>
+
+      {/* Affiliate CTA Banner */}
+      <div className={styles.affiliateCtaCard}>
+        <div className={styles.affiliateCtaLeft}>
+          <div className={styles.affiliateBadge}>
+            <FiAward />
+            <span>Creator & Partner Network</span>
+          </div>
+          <h2 className={styles.affiliateHeading}>Join Sabuj Kuthi Affiliate Programme</h2>
+          <p className={styles.affiliateSub}>
+            Share authentic gardening, rare caudex adeniums & organic fertilizers with your audience. Earn attractive commissions and exclusive discount codes for your followers.
+          </p>
+        </div>
+        <Link href="/affiliate" className={styles.affiliateJoinBtn}>
+          <span>Join Now</span>
+          <FiArrowRight />
+        </Link>
       </div>
 
       {/* Quick Action Tiles */}

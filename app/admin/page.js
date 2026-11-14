@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import {
   FiArrowUpRight,
+  FiAward,
   FiBox,
   FiChevronLeft,
   FiFileText,
@@ -22,6 +23,7 @@ import InventoryPanel from "./components/InventoryPanel";
 import OrdersPanel from "./components/OrdersPanel";
 import BlogsPanel from "./components/BlogsPanel";
 import StoreSettingsPanel from "./components/StoreSettingsPanel";
+import AffiliatePanel from "./components/AffiliatePanel";
 
 const tabs = [
   { id: "dashboard", label: "Dashboard", icon: FiTrendingUp },
@@ -29,6 +31,7 @@ const tabs = [
   { id: "category", label: "Categories", icon: FiGrid },
   { id: "orders", label: "Orders", icon: FiShoppingBag },
   { id: "blogs", label: "Blogs", icon: FiFileText },
+  { id: "affiliate", label: "Affiliate", icon: FiAward },
   { id: "settings", label: "Store Settings", icon: FiSettings },
 ];
 
@@ -226,6 +229,8 @@ export default function AdminPage() {
                   <OrdersPanel active={activeTab === "orders"} />
                 ) : id === "blogs" ? (
                   <BlogsPanel active={activeTab === "blogs"} />
+                ) : id === "affiliate" ? (
+                  <AffiliatePanel active={activeTab === "affiliate"} />
                 ) : id === "settings" ? (
                   <StoreSettingsPanel active={activeTab === "settings"} />
                 ) : (

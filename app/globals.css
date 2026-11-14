@@ -1359,11 +1359,24 @@ body {
 
 .menu-user-profile-links {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 8px;
   padding-top: 8px;
   border-top: 1px solid #eef4f0;
   width: 100%;
+}
+
+.menu-user-pill-link.menu-affiliate-link {
+  flex-basis: 100%;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  color: #166534;
+  font-weight: 700;
+}
+
+.menu-user-pill-link.menu-affiliate-link svg {
+  color: #d97706;
 }
 
 .menu-user-pill-link {
@@ -1440,7 +1453,40 @@ body {
 
 .menu-guest-actions {
   display: flex;
+  flex-direction: column;
   gap: 10px;
+}
+
+.menu-guest-btns-row {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+}
+
+.menu-guest-affiliate-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: #f0fdf4;
+  border: 1.5px solid #a7f3d0;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #166534;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.menu-guest-affiliate-link:hover {
+  background: #dcfce7;
+  border-color: #86efac;
+}
+
+.menu-guest-affiliate-link svg {
+  color: #d97706;
+  font-size: 15px;
 }
 
 .menu-guest-btn {
@@ -4007,6 +4053,20 @@ body {
 
   .profile-flyout-item.logout .profile-flyout-icon {
     color: #b5382b;
+  }
+
+  .profile-flyout-item.profile-affiliate-item {
+    color: #166534;
+    font-weight: 700;
+  }
+
+  .profile-flyout-item.profile-affiliate-item .profile-flyout-icon {
+    color: #d97706;
+  }
+
+  .profile-flyout-item.profile-affiliate-item:hover {
+    background: #ecfdf5;
+    color: #065f46;
   }
 
   /* Desktop Sub-Navigation Bar */

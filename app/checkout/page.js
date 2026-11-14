@@ -46,6 +46,45 @@ export default function CheckoutPage() {
   const shipping = deliveryPaise(subtotal, deliverySettings);
   const total = Math.max(100, subtotal - discountPaise + shipping);
 
+  const [couponInput, setCouponInput] = useState('');
+  const [appliedCoupon, setAppliedCoupon] = useState(null);
+  const [couponMsg, setCouponMsg] = useState('');
+  const [couponBusy, setCouponBusy] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const ref = params.get('ref') || params.get('coupon');
+      if (ref) {
+        const clean = ref.toUpperCase().trim();
+        setCouponInput(clean);
+        validateCoupon(clean);
+      }
+    }
+  }, []);
+
+  const validateCoupon = async (codeToTest) => {
+    const code = (codeToTest || couponInput).trim().toUpperCase();
+    if (!code) return;
+    setCouponBusy(true);
+    setCouponMsg('');
+    try {
+      const res = await fetch(`/api/affiliate/coupon/validate?code=${encodeURIComponent(code)}`);
+      const data = await res.json();
+      if (res.ok && data.valid) {
+        setAppliedCoupon(data);
+        setCouponMsg(`✓ ${data.message || 'Coupon code applied!'}`);
+      } else {
+        setAppliedCoupon(null);
+        setCouponMsg(data.message || 'Invalid or inactive coupon code.');
+      }
+    } catch {
+      setCouponMsg('Could not validate coupon code.');
+    } finally {
+      setCouponBusy(false);
+    }
+  };
+
   const finish = useCallback((order, token) => {
     sessionStorage.setItem(`paid-order:${order.id}`, token);
     sessionStorage.removeItem('pending-checkout');
@@ -86,7 +125,12 @@ export default function CheckoutPage() {
         const existing = await checkoutPost('/api/checkout/status', pending);
         if (existing.status === 'paid') { finish(existing.order, pending.token); return; }
       }
-      const payload = { customer: form, items: items.map(item => ({ slug: item.slug, qty: item.qty, variant: item.variant || null })), expectedTotal: total };
+      const payload = {
+        customer: form,
+        items: items.map(item => ({ slug: item.slug, qty: item.qty, variant: item.variant || null })),
+        expectedTotal: total,
+        couponCode: appliedCoupon?.couponCode || undefined
+      };
       const fingerprint = JSON.stringify(payload);
       if (!attempt.current || attempt.current.fingerprint !== fingerprint) attempt.current = { fingerprint, token: !attempt.current && pending ? pending.token : `${crypto.randomUUID()}${crypto.randomUUID()}` };
       const token = attempt.current.token;
@@ -152,6 +196,33 @@ export default function CheckoutPage() {
                   </div>
                 )}
                 {!items.length ? <p className={styles.empty}>Your cart is empty. <Link href="/">Browse plants</Link></p> : items.map(item => <div className={styles.line} key={JSON.stringify([item.slug, item.variant])}>{item.image && <img src={item.image} alt="" />}<div><strong>{item.title}</strong><span>{item.variant ? `${item.variant} · ` : ''}Qty: {item.qty}</span></div><strong>₹{money(Math.round(Number(item.price) * 100) * item.qty)}</strong></div>)}
+                {/* Affiliate Coupon Input */}
+                <div className={styles.couponSection}>
+                  <div className={styles.couponInputRow}>
+                    <input
+                      type="text"
+                      placeholder="Coupon / Partner code..."
+                      value={couponInput}
+                      onChange={e => setCouponInput(e.target.value.toUpperCase())}
+                      className={styles.couponInput}
+                      aria-label="Partner coupon code"
+                    />
+                    <button
+                      type="button"
+                      disabled={couponBusy || !couponInput.trim()}
+                      onClick={() => validateCoupon()}
+                      className={styles.couponBtn}
+                    >
+                      {couponBusy ? 'Checking…' : 'Apply'}
+                    </button>
+                  </div>
+                  {couponMsg && (
+                    <p className={appliedCoupon ? styles.couponSuccess : styles.couponError}>
+                      {couponMsg}
+                    </p>
+                  )}
+                </div>
+
                 <div className={styles.totals}>
                   <p><span>Items</span><strong>₹{money(subtotal)}</strong></p>
                   {discountPaise > 0 && (

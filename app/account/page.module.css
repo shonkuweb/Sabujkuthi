@@ -318,3 +318,98 @@
   color: #64748b;
   font-size: 15px;
 }
+
+.affiliateCtaCard {
+  background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%);
+  border: 1.5px solid #a7f3d0;
+  border-radius: 18px;
+  padding: 22px 24px;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  box-shadow: 0 4px 16px rgba(16, 185, 129, 0.08);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.affiliateCtaCard:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(16, 185, 129, 0.14);
+}
+
+.affiliateCtaLeft {
+  flex: 1;
+}
+
+.affiliateBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #dcfce7;
+  color: #166534;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+  border: 1px solid #bbf7d0;
+}
+
+.affiliateBadge svg {
+  color: #d97706;
+  font-size: 13px;
+}
+
+.affiliateHeading {
+  font-size: 18px;
+  font-weight: 700;
+  color: #064e3b;
+  margin: 0 0 6px;
+}
+
+.affiliateSub {
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: #335343;
+  margin: 0;
+  max-width: 580px;
+}
+
+.affiliateJoinBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #15803d;
+  color: #ffffff;
+  padding: 12px 22px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(21, 128, 61, 0.25);
+  transition: all 0.2s ease;
+}
+
+.affiliateJoinBtn:hover {
+  background: #166534;
+  box-shadow: 0 6px 16px rgba(21, 128, 61, 0.35);
+  transform: translateX(2px);
+}
+
+@media (max-width: 680px) {
+  .affiliateCtaCard {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 18px 16px;
+    gap: 14px;
+  }
+  .affiliateJoinBtn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+

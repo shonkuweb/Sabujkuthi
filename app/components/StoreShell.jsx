@@ -4,6 +4,7 @@ import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
+  FiAward,
   FiChevronDown,
   FiChevronRight,
   FiCreditCard,
@@ -262,6 +263,10 @@ export default function StoreShell({ children }) {
                         <FiTruck className="profile-flyout-icon" />
                         <span>Track Order</span>
                       </Link>
+                      <Link href="/affiliate" className="profile-flyout-item profile-affiliate-item">
+                        <FiAward className="profile-flyout-icon" />
+                        <span>Join Sabuj Kuthi Affiliate Programme</span>
+                      </Link>
                       <div className="profile-flyout-divider" />
                       <button type="button" className="profile-flyout-item logout" onClick={handleLogout}>
                         <FiLogOut className="profile-flyout-icon" />
@@ -282,6 +287,10 @@ export default function StoreShell({ children }) {
                       <Link href="/track-order" className="profile-flyout-item">
                         <FiTruck className="profile-flyout-icon" />
                         <span>Track Order</span>
+                      </Link>
+                      <Link href="/affiliate" className="profile-flyout-item profile-affiliate-item">
+                        <FiAward className="profile-flyout-icon" />
+                        <span>Join Sabuj Kuthi Affiliate Programme</span>
                       </Link>
                     </>
                   )}
@@ -663,15 +672,25 @@ export default function StoreShell({ children }) {
                     <FiTruck />
                     <span>Track Order</span>
                   </Link>
+                  <Link href="/affiliate" className="menu-user-pill-link menu-affiliate-link" onClick={closeMenu}>
+                    <FiAward />
+                    <span>Join Sabuj Kuthi Affiliate Programme</span>
+                  </Link>
                 </div>
               </div>
             ) : (
               <div className="menu-guest-actions">
-                <Link href="/login" className="menu-guest-btn login" onClick={closeMenu}>
-                  Log In
-                </Link>
-                <Link href="/login?mode=signup" className="menu-guest-btn signup" onClick={closeMenu}>
-                  Sign Up
+                <div className="menu-guest-btns-row">
+                  <Link href="/login" className="menu-guest-btn login" onClick={closeMenu}>
+                    Log In
+                  </Link>
+                  <Link href="/login?mode=signup" className="menu-guest-btn signup" onClick={closeMenu}>
+                    Sign Up
+                  </Link>
+                </div>
+                <Link href="/affiliate" className="menu-guest-affiliate-link" onClick={closeMenu}>
+                  <FiAward />
+                  <span>Join Sabuj Kuthi Affiliate Programme</span>
                 </Link>
               </div>
             )}

@@ -170,6 +170,114 @@ try {
     }
     const orderColumns = db.prepare('PRAGMA table_info("Order")').all();
     if (!orderColumns.some(column => column.name === 'orderNumber')) db.exec('ALTER TABLE "Order" ADD COLUMN "orderNumber" INTEGER');
+    if (!orderColumns.some(column => column.name === 'couponCode')) db.exec('ALTER TABLE "Order" ADD COLUMN "couponCode" TEXT');
+    if (!orderColumns.some(column => column.name === 'affiliateId')) db.exec('ALTER TABLE "Order" ADD COLUMN "affiliateId" TEXT');
+    db.exec('CREATE INDEX IF NOT EXISTS "Order_affiliateId_idx" ON "Order"("affiliateId")');
+    db.exec('CREATE INDEX IF NOT EXISTS "Order_couponCode_idx" ON "Order"("couponCode")');
+
+    // Affiliate Tables
+    db.exec(`CREATE TABLE IF NOT EXISTS "AffiliateAccount" (
+      "id" TEXT NOT NULL PRIMARY KEY,
+      "name" TEXT NOT NULL,
+      "email" TEXT NOT NULL,
+      "phone" TEXT NOT NULL,
+      "passwordHash" TEXT NOT NULL,
+      "youtubeUrl" TEXT,
+      "instagramUrl" TEXT,
+      "facebookUrl" TEXT,
+      "message" TEXT,
+      "status" TEXT NOT NULL DEFAULT 'pending',
+      "couponCode" TEXT,
+      "warningMessage" TEXT,
+      "banMessage" TEXT,
+      "rejectReason" TEXT,
+      "reviewedAt" DATETIME,
+      "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE UNIQUE INDEX IF NOT EXISTS "AffiliateAccount_phone_key" ON "AffiliateAccount"("phone");
+    CREATE UNIQUE INDEX IF NOT EXISTS "AffiliateAccount_couponCode_key" ON "AffiliateAccount"("couponCode");
+    CREATE INDEX IF NOT EXISTS "AffiliateAccount_status_createdAt_idx" ON "AffiliateAccount"("status", "createdAt");
+    CREATE INDEX IF NOT EXISTS "AffiliateAccount_phone_idx" ON "AffiliateAccount"("phone");
+
+    CREATE TABLE IF NOT EXISTS "AffiliateProgramme" (
+      "id" TEXT NOT NULL PRIMARY KEY,
+      "title" TEXT NOT NULL,
+      "description" TEXT,
+      "commissionType" TEXT NOT NULL DEFAULT 'percentage',
+      "commissionValue" REAL NOT NULL DEFAULT 10.0,
+      "commissionPercent" REAL NOT NULL DEFAULT 10.0,
+      "discountType" TEXT NOT NULL DEFAULT 'percentage',
+      "discountValue" REAL NOT NULL DEFAULT 5.0,
+      "discountPercent" REAL NOT NULL DEFAULT 5.0,
+      "scopeType" TEXT NOT NULL DEFAULT 'all',
+      "categoryId" TEXT,
+      "productIds" TEXT,
+      "minOrderValue" INTEGER DEFAULT 0,
+      "startDate" TEXT,
+      "endDate" TEXT,
+      "status" TEXT NOT NULL DEFAULT 'active',
+      "terms" TEXT,
+      "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS "AffiliateAccountProgramme" (
+      "id" TEXT NOT NULL PRIMARY KEY,
+      "affiliateId" TEXT NOT NULL,
+      "programmeId" TEXT NOT NULL,
+      "joinedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY ("affiliateId") REFERENCES "AffiliateAccount"("id") ON DELETE CASCADE,
+      FOREIGN KEY ("programmeId") REFERENCES "AffiliateProgramme"("id") ON DELETE CASCADE
+    );
+    CREATE UNIQUE INDEX IF NOT EXISTS "AffiliateAccountProgramme_unique" ON "AffiliateAccountProgramme"("affiliateId", "programmeId");
+    CREATE INDEX IF NOT EXISTS "AffiliateAccountProgramme_affiliateId_idx" ON "AffiliateAccountProgramme"("affiliateId");
+    CREATE INDEX IF NOT EXISTS "AffiliateAccountProgramme_programmeId_idx" ON "AffiliateAccountProgramme"("programmeId");`);
+
+    const progColumns = db.prepare('PRAGMA table_info("AffiliateProgramme")').all();
+    if (progColumns.length) {
+      const additions = {
+        commissionType: "TEXT NOT NULL DEFAULT 'percentage'",
+        commissionValue: "REAL NOT NULL DEFAULT 10.0",
+        discountType: "TEXT NOT NULL DEFAULT 'percentage'",
+        discountValue: "REAL NOT NULL DEFAULT 5.0",
+        scopeType: "TEXT NOT NULL DEFAULT 'all'",
+        categoryId: "TEXT",
+        productIds: "TEXT",
+        minOrderValue: "INTEGER DEFAULT 0",
+        startDate: "TEXT",
+        endDate: "TEXT",
+      };
+      for (const [col, def] of Object.entries(additions)) {
+        if (!progColumns.some(existing => existing.name === col)) {
+          db.exec(`ALTER TABLE "AffiliateProgramme" ADD COLUMN "${col}" ${def}`);
+        }
+      }
+    }
+
+    // Seed default programme if none exists
+    const programmeCount = db.prepare('SELECT COUNT(*) AS count FROM "AffiliateProgramme"').get().count;
+    if (programmeCount === 0) {
+      const insertProg = db.prepare(`INSERT INTO "AffiliateProgramme" (id, title, description, commissionPercent, discountPercent, status, terms, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`);
+      insertProg.run(
+        randomUUID(),
+        'SabujKuthi Creator Starter Programme',
+        'Earn 10% commission on every order placed with your coupon code. Your audience enjoys 5% discount across all nursery plants and organic fertilizers.',
+        10.0,
+        5.0,
+        'active',
+        'Standard commission applied to all completed plant & fertilizer deliveries. Payouts disbursed monthly.'
+      );
+      insertProg.run(
+        randomUUID(),
+        'Bonsai & Rare Adenium Ambassador',
+        'Special higher tier for passionate bonsai & caudex creators. 15% commission on grafted rare adenium collections.',
+        15.0,
+        10.0,
+        'active',
+        'Requires regular video/post mentions of exotic desert roses.'
+      );
+    }
     let lastNumber = Math.max(1000, db.prepare('SELECT MAX(orderNumber) AS number FROM "Order"').get().number || 0,
       Number(db.prepare("SELECT value FROM Settings WHERE key = 'order_number_sequence'").get()?.value) || 0);
     const assignNumber = db.prepare('UPDATE "Order" SET orderNumber = ? WHERE id = ?');
