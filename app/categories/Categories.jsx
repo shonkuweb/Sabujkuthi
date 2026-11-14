@@ -116,9 +116,9 @@ export default function Categories() {
             <FaLeaf aria-hidden="true" />
             <span>Explore Collections</span>
           </span>
-          <h1 className={styles.title}>Plant Categories</h1>
+          <h1 className={styles.title}>Categories</h1>
           <p className={styles.description}>
-            Browse our nursery collection by category. Select any category to explore its varieties and view all available plants.
+            Browse our collection by category. Select any category to explore its varieties and view all available products.
           </p>
         </div>
 
@@ -130,8 +130,8 @@ export default function Categories() {
               type="search"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search plant categories…"
-              aria-label="Search plant categories"
+              placeholder="Search categories…"
+              aria-label="Search categories"
               className={styles.searchInput}
             />
             {searchTerm && (
@@ -179,7 +179,7 @@ export default function Categories() {
       {loading && (
         <div className={styles.stateMessage} role="status">
           <h2>Loading categories…</h2>
-          <p>Please wait while we fetch the latest plant categories.</p>
+          <p>Please wait while we fetch the latest categories.</p>
         </div>
       )}
 
@@ -208,7 +208,7 @@ export default function Categories() {
           ) : (
             <>
               <h2>No categories found</h2>
-              <p>New plant categories will be published soon. Please check back later.</p>
+              <p>New categories will be published soon. Please check back later.</p>
               <Link href="/" className={styles.tabBtn}>
                 Back to Home
               </Link>
