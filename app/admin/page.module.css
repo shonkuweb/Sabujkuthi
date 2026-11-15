@@ -44,6 +44,7 @@
   display: flex;
   align-items: center;
   justify-self: end;
+  gap: 10px;
 }
 
 .sidebarToggleBtn {
@@ -114,6 +115,202 @@
   background: #f2f7f4;
   border-color: #c4d7cb;
   color: #1a4d32;
+}
+
+.logoutBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 14px;
+  border: 1px solid #e1e8e3;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #7a3535;
+  font-size: 12px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+
+.logoutBtn:hover {
+  background: #fff5f5;
+  border-color: #f5c4c4;
+  color: #b91c1c;
+}
+
+.logoutIcon {
+  width: 14px;
+  height: 14px;
+}
+
+/* Logout Notice Modal */
+.logoutModal {
+  width: min(480px, calc(100vw - 32px));
+  margin: auto;
+  padding: 0;
+  border: 1px solid #e1e9e2;
+  border-radius: 18px;
+  background: #ffffff;
+  color: #20352b;
+  box-shadow: 0 24px 60px rgba(10, 33, 23, 0.22);
+  overflow: hidden;
+}
+
+.logoutModal::backdrop {
+  background: rgba(10, 33, 23, 0.55);
+  backdrop-filter: blur(4px);
+}
+
+.logoutModalCard {
+  padding: 24px 24px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.logoutModalHeader {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  position: relative;
+}
+
+.logoutModalIconWrapper {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: #fef3f2;
+  border: 1px solid #fee4e2;
+  color: #d92d20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.logoutModalIconWrapper svg {
+  width: 22px;
+  height: 22px;
+}
+
+.logoutModalTitleBlock {
+  flex: 1;
+}
+
+.logoutModalEyebrow {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: #b42318;
+  margin-bottom: 2px;
+}
+
+.logoutModalTitle {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+  color: #1a2e22;
+  line-height: 1.3;
+}
+
+.logoutModalCloseBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 8px;
+  background: #f3f6f4;
+  color: #617369;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.logoutModalCloseBtn:hover:not(:disabled) {
+  background: #e4ebe6;
+  color: #1a2e22;
+}
+
+.logoutModalCloseBtn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.logoutModalMessage {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.55;
+  color: #3f5247;
+  background: #f8faf9;
+  padding: 14px 16px;
+  border-radius: 10px;
+  border: 1px solid #e5ece7;
+}
+
+.logoutModalActions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.logoutModalCancelBtn {
+  padding: 9px 18px;
+  border-radius: 8px;
+  border: 1px solid #d0ddd5;
+  background: #ffffff;
+  color: #43584c;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.logoutModalCancelBtn:hover:not(:disabled) {
+  background: #f4f7f5;
+  border-color: #b8ccc0;
+  color: #1a3324;
+}
+
+.logoutModalConfirmBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 18px;
+  border-radius: 8px;
+  border: 1px solid #d92d20;
+  background: #d92d20;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.logoutModalConfirmBtn:hover:not(:disabled) {
+  background: #b42318;
+  border-color: #b42318;
+}
+
+.logoutModalConfirmBtn:disabled,
+.logoutModalCancelBtn:disabled,
+.logoutModalCloseBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.logoutModalConfirmBtn svg {
+  width: 15px;
+  height: 15px;
 }
 
 .layoutContainer {
@@ -406,6 +603,15 @@
     font-size: 11px;
   }
 
+  .logoutBtn {
+    padding: 6px 10px;
+    font-size: 11px;
+  }
+
+  .navRight {
+    gap: 8px;
+  }
+
   .sidebarOverlay {
     position: fixed;
     inset: 0;
@@ -461,5 +667,40 @@
 
   .panelHeader h1 {
     font-size: 24px;
+  }
+}
+
+@media (max-width: 480px) {
+  .topbar {
+    padding: 10px 12px;
+    gap: 8px;
+  }
+
+  .navRight {
+    gap: 6px;
+  }
+
+  .storeLink,
+  .logoutBtn {
+    padding: 6px 8px;
+    font-size: 11px;
+    gap: 4px;
+  }
+
+  .logoutModalCard {
+    padding: 20px 16px 16px;
+    gap: 14px;
+  }
+
+  .logoutModalActions {
+    flex-direction: column-reverse;
+    width: 100%;
+    gap: 8px;
+  }
+
+  .logoutModalCancelBtn,
+  .logoutModalConfirmBtn {
+    width: 100%;
+    justify-content: center;
   }
 }
