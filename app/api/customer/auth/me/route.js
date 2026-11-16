@@ -11,11 +11,40 @@ export async function GET(request) {
 
     const customer = await prisma.customer.findUnique({
       where: { id: session.id },
-      select: { id: true, phone: true, name: true, state: true, pincode: true, createdAt: true }
+      select: {
+        id: true,
+        phone: true,
+        name: true,
+        state: true,
+        pincode: true,
+        isBanned: true,
+        banReason: true,
+        lastActiveAt: true,
+        createdAt: true,
+      }
     });
 
     if (!customer) {
       return NextResponse.json({ authenticated: false, customer: null });
+    }
+
+    if (customer.isBanned) {
+      const response = NextResponse.json({
+        authenticated: false,
+        banned: true,
+        banReason: customer.banReason,
+        customer: null,
+      });
+      response.cookies.delete('customer_token');
+      return response;
+    }
+
+    // Keep activity timestamp updated periodically (at most once every 60 seconds)
+    if (!customer.lastActiveAt || Date.now() - new Date(customer.lastActiveAt).getTime() > 60000) {
+      await prisma.customer.update({
+        where: { id: customer.id },
+        data: { lastActiveAt: new Date() }
+      });
     }
 
     return NextResponse.json({

@@ -15,6 +15,7 @@ import {
   FiSettings,
   FiShoppingBag,
   FiTrendingUp,
+  FiUsers,
   FiX
 } from "react-icons/fi";
 import BusinessLogo from "../components/BusinessLogo";
@@ -23,6 +24,7 @@ import DashboardPanel from "./components/DashboardPanel";
 import CategoriesPanel from "./components/CategoriesPanel";
 import InventoryPanel from "./components/InventoryPanel";
 import OrdersPanel from "./components/OrdersPanel";
+import AccountsPanel from "./components/AccountsPanel";
 import BlogsPanel from "./components/BlogsPanel";
 import StoreSettingsPanel from "./components/StoreSettingsPanel";
 import AffiliatePanel from "./components/AffiliatePanel";
@@ -32,6 +34,7 @@ const tabs = [
   { id: "inventory", label: "Inventory", icon: FiBox },
   { id: "category", label: "Categories", icon: FiGrid },
   { id: "orders", label: "Orders", icon: FiShoppingBag },
+  { id: "accounts", label: "Accounts", icon: FiUsers },
   { id: "blogs", label: "Blogs", icon: FiFileText },
   { id: "affiliate", label: "Affiliate", icon: FiAward },
   { id: "settings", label: "Store Settings", icon: FiSettings },
@@ -275,6 +278,8 @@ export default function AdminPage() {
                   <InventoryPanel />
                 ) : id === "orders" ? (
                   <OrdersPanel active={activeTab === "orders"} />
+                ) : id === "accounts" ? (
+                  <AccountsPanel active={activeTab === "accounts"} />
                 ) : id === "blogs" ? (
                   <BlogsPanel active={activeTab === "blogs"} />
                 ) : id === "affiliate" ? (

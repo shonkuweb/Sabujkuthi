@@ -179,14 +179,19 @@ model AffiliateAccountProgramme {
 }
 
 model Customer {
-  id           String   @id @default(uuid())
-  phone        String   @unique
+  id           String    @id @default(uuid())
+  phone        String    @unique
   passwordHash String
   name         String?
   state        String?
   pincode      String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  isBanned     Boolean   @default(false)
+  banReason    String?
+  bannedAt     DateTime?
+  lastActiveAt DateTime?
+  lastLoginAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
   @@index([phone])
 }

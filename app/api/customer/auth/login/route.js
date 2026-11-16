@@ -26,6 +26,23 @@ export async function POST(request) {
       return NextResponse.json({ success: false, message: 'Incorrect phone number or password. Please try again.' }, { status: 401 });
     }
 
+    if (customer.isBanned) {
+      return NextResponse.json({
+        success: false,
+        message: customer.banReason
+          ? `This account has been suspended: ${customer.banReason}`
+          : 'This account has been suspended by the store administrator. Please contact support.'
+      }, { status: 403 });
+    }
+
+    await prisma.customer.update({
+      where: { id: customer.id },
+      data: {
+        lastLoginAt: new Date(),
+        lastActiveAt: new Date(),
+      }
+    });
+
     const token = await createCustomerSession({
       id: customer.id,
       phone: customer.phone,

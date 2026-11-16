@@ -12,6 +12,20 @@ export async function GET(request) {
       return NextResponse.json({ success: false, message: 'Please log in to view your orders.' }, { status: 401 });
     }
 
+    const customer = await prisma.customer.findUnique({
+      where: { id: session.id },
+      select: { isBanned: true, banReason: true }
+    });
+
+    if (customer?.isBanned) {
+      return NextResponse.json({
+        success: false,
+        message: customer.banReason
+          ? `This account has been suspended: ${customer.banReason}`
+          : 'Your account has been suspended.'
+      }, { status: 403 });
+    }
+
     const customerPhone = normalizePhone(session.phone);
 
     // Fetch candidate orders matching phone substring or full match

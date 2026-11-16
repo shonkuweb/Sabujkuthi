@@ -17,11 +17,13 @@ function LoginForm() {
   const { customer, isAuthenticated, login, signup } = useCustomer();
   const [mode, setMode] = useState(initialMode);
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   // Form fields
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [state, setState] = useState("");
   const [pincode, setPincode] = useState("");
 
@@ -72,6 +74,14 @@ function LoginForm() {
     }
 
     if (mode === "signup") {
+      if (!confirmPassword) {
+        setError("Please re-enter your password to confirm.");
+        return;
+      }
+      if (password !== confirmPassword) {
+        setError("Passwords do not match. Please ensure both passwords are identical.");
+        return;
+      }
       const cleanPincode = pincode.trim().replace(/\D/g, "");
       if (!cleanPincode || cleanPincode.length !== 6 || !/^[1-9][0-9]{5}$/.test(cleanPincode)) {
         setError("Please enter a valid 6-digit delivery pincode.");
@@ -88,7 +98,7 @@ function LoginForm() {
     try {
       if (mode === "signup") {
         const cleanPincode = pincode.trim().replace(/\D/g, "");
-        const res = await signup(cleanPhone, password, name.trim(), state, cleanPincode);
+        const res = await signup(cleanPhone, password, name.trim(), state, cleanPincode, confirmPassword);
         if (res.success) {
           setSuccess("Account created successfully! Redirecting...");
           setTimeout(() => {
@@ -142,6 +152,7 @@ function LoginForm() {
               setMode("login");
               setError("");
               setSuccess("");
+              setConfirmPassword("");
             }}
           >
             Log In
@@ -155,6 +166,7 @@ function LoginForm() {
               setMode("signup");
               setError("");
               setSuccess("");
+              setConfirmPassword("");
             }}
           >
             Sign Up
@@ -242,6 +254,39 @@ function LoginForm() {
           </div>
 
           {mode === "signup" && (
+            <div className={styles.field}>
+              <label htmlFor="customer-confirm-password" className={styles.label}>
+                Confirm Password <span style={{ color: '#e11d48' }}>*</span>
+              </label>
+              <div className={styles.inputWrap}>
+                <input
+                  id="customer-confirm-password"
+                  type={showConfirmPassword ? "text" : "password"}
+                  placeholder="Re-enter your password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className={styles.input}
+                  autoComplete="new-password"
+                  required
+                />
+                <button
+                  type="button"
+                  className={styles.passwordToggle}
+                  aria-label={showConfirmPassword ? "Hide confirm password" : "Show confirm password"}
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                >
+                  {showConfirmPassword ? <FiEyeOff /> : <FiEye />}
+                </button>
+              </div>
+              {confirmPassword && password && confirmPassword !== password && (
+                <p style={{ fontSize: '0.8rem', color: '#e11d48', margin: '0.35rem 0 0' }}>
+                  Passwords do not match
+                </p>
+              )}
+            </div>
+          )}
+
+          {mode === "signup" && (
             <>
               <div className={styles.field}>
                 <label htmlFor="customer-pincode" className={styles.label}>
@@ -327,6 +372,7 @@ function LoginForm() {
                   setMode("signup");
                   setError("");
                   setSuccess("");
+                  setConfirmPassword("");
                 }}
               >
                 Create one now
@@ -342,6 +388,7 @@ function LoginForm() {
                   setMode("login");
                   setError("");
                   setSuccess("");
+                  setConfirmPassword("");
                 }}
               >
                 Log In

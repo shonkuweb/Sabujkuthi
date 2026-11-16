@@ -100,6 +100,11 @@ try {
       "name" TEXT,
       "state" TEXT,
       "pincode" TEXT,
+      "isBanned" BOOLEAN NOT NULL DEFAULT false,
+      "banReason" TEXT,
+      "bannedAt" DATETIME,
+      "lastActiveAt" DATETIME,
+      "lastLoginAt" DATETIME,
       "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
       "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
     );
@@ -167,6 +172,11 @@ try {
     if (customerColumns.length) {
       if (!customerColumns.some(col => col.name === 'state')) db.exec('ALTER TABLE "Customer" ADD COLUMN "state" TEXT');
       if (!customerColumns.some(col => col.name === 'pincode')) db.exec('ALTER TABLE "Customer" ADD COLUMN "pincode" TEXT');
+      if (!customerColumns.some(col => col.name === 'isBanned')) db.exec('ALTER TABLE "Customer" ADD COLUMN "isBanned" BOOLEAN NOT NULL DEFAULT false');
+      if (!customerColumns.some(col => col.name === 'banReason')) db.exec('ALTER TABLE "Customer" ADD COLUMN "banReason" TEXT');
+      if (!customerColumns.some(col => col.name === 'bannedAt')) db.exec('ALTER TABLE "Customer" ADD COLUMN "bannedAt" DATETIME');
+      if (!customerColumns.some(col => col.name === 'lastActiveAt')) db.exec('ALTER TABLE "Customer" ADD COLUMN "lastActiveAt" DATETIME');
+      if (!customerColumns.some(col => col.name === 'lastLoginAt')) db.exec('ALTER TABLE "Customer" ADD COLUMN "lastLoginAt" DATETIME');
     }
     const orderColumns = db.prepare('PRAGMA table_info("Order")').all();
     if (!orderColumns.some(column => column.name === 'orderNumber')) db.exec('ALTER TABLE "Order" ADD COLUMN "orderNumber" INTEGER');

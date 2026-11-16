@@ -6,7 +6,7 @@ import { createCustomerSession } from '../../../../../lib/customer-session.mjs';
 export async function POST(request) {
   try {
     const body = await request.json();
-    const { name, password, state, pincode } = body;
+    const { name, password, confirmPassword, state, pincode } = body;
     const rawPhone = body.phone;
 
     const phone = normalizePhone(rawPhone);
@@ -16,6 +16,10 @@ export async function POST(request) {
 
     if (typeof password !== 'string' || password.length < 6) {
       return NextResponse.json({ success: false, message: 'Password must be at least 6 characters long.' }, { status: 400 });
+    }
+
+    if (confirmPassword !== undefined && confirmPassword !== password) {
+      return NextResponse.json({ success: false, message: 'Passwords do not match. Please ensure both passwords match.' }, { status: 400 });
     }
 
     const cleanPincode = typeof pincode === 'string' ? pincode.trim() : '';
@@ -50,6 +54,8 @@ export async function POST(request) {
         name: cleanName || null,
         state: cleanState,
         pincode: cleanPincode,
+        lastLoginAt: new Date(),
+        lastActiveAt: new Date(),
       }
     });
 
