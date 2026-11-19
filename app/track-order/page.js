@@ -18,6 +18,7 @@ import {
   FiUser
 } from "react-icons/fi";
 import { FaLeaf, FaWhatsapp } from "react-icons/fa";
+import { whatsappUrl } from "../../lib/business.mjs";
 import { useCustomer } from "../context/CustomerContext";
 import { business } from "../../lib/business.mjs";
 import styles from "./page.module.css";
@@ -368,7 +369,7 @@ function TrackOrderContent() {
               🌿 Need immediate assistance or care advice for your order <strong>{orderData.reference}</strong>?
             </p>
             <a
-              href={`https://wa.me/918637054105?text=${encodeURIComponent(`Hello SabujKuthi Nursery, I would like an update on my order ${orderData.reference}.`)}`}
+              href={whatsappUrl(`Hello SabujKuthi Nursery, I would like an update on my order ${orderData.reference}.`)}
               target="_blank"
               rel="noopener noreferrer"
               className={styles.whatsappBtn}

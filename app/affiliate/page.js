@@ -273,7 +273,7 @@ export default function AffiliatePage() {
               <div className={styles.bannedSupportRow}>
                 <span>Need assistance? Contact our team on WhatsApp: </span>
                 <a href={business.whatsappUrl} target="_blank" rel="noopener noreferrer" className={styles.supportLink}>
-                  <FaWhatsapp /> +91 86370 54105
+                  <FaWhatsapp /> {business.phoneDisplay}
                 </a>
               </div>
             </div>

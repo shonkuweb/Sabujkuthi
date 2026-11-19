@@ -12,7 +12,7 @@ This repository is an existing nursery ecommerce store. Extend its components an
 
 ## Business identity and assets
 
-`lib/business.mjs` is the source of business identity and WhatsApp URLs: SabujKuthi Nursery, +91 86370 54105, sabujkuthi@gmail.com, Nayabasat, West Bengal 721253, India. Do not reintroduce previous Mitali/Malati/Kiaan branding or contact details.
+`lib/business.mjs` is the source of business identity and WhatsApp URLs: SabujKuthi Nursery, +91 89677 21082, sabujkuthi@gmail.com, Nayabasat, West Bengal 721253, India. Do not reintroduce previous Mitali/Malati/Kiaan branding or contact details.
 
 The header/invoice logo is `public/images/sabujkuthi-logo.png`. The white footer logo is `public/images/sabujkuthi-footer-logo.png`; preserve its placement adjustment for image padding. Invoice fonts, including Bengali and rupee support, are bundled in `public/fonts` with their license.
 

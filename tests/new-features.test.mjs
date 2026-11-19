@@ -194,7 +194,7 @@ test('customer session correctly preserves state and pincode', async () => {
   const { createCustomerSession, verifyCustomerSession } = await import('../lib/customer-session.mjs');
   const token = await createCustomerSession({
     id: 'cust-wb',
-    phone: '8637054105',
+    phone: '8967721082',
     name: 'Anirban',
     state: 'West Bengal',
     pincode: '721253',

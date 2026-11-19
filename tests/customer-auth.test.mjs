@@ -9,14 +9,14 @@ import { normalizePhone, isValidPhone, hashPassword, verifyPassword } from '../l
 import { createCustomerSession, verifyCustomerSession } from '../lib/customer-session.mjs';
 
 test('phone normalization and validation handles spaces, prefixes, and dashes', () => {
-  assert.equal(normalizePhone('+91 86370 54105'), '8637054105');
-  assert.equal(normalizePhone('+91-86370-54105'), '8637054105');
-  assert.equal(normalizePhone('918637054105'), '8637054105');
-  assert.equal(normalizePhone('08637054105'), '8637054105');
-  assert.equal(normalizePhone('8637054105'), '8637054105');
+  assert.equal(normalizePhone('+91 89677 21082'), '8967721082');
+  assert.equal(normalizePhone('+91-89677-21082'), '8967721082');
+  assert.equal(normalizePhone('918967721082'), '8967721082');
+  assert.equal(normalizePhone('08967721082'), '8967721082');
+  assert.equal(normalizePhone('8967721082'), '8967721082');
 
-  assert.equal(isValidPhone('+91 86370 54105'), true);
-  assert.equal(isValidPhone('8637054105'), true);
+  assert.equal(isValidPhone('+91 89677 21082'), true);
+  assert.equal(isValidPhone('8967721082'), true);
   assert.equal(isValidPhone('12345'), false);
   assert.equal(isValidPhone('abcdefghij'), false);
   assert.equal(isValidPhone('1234567890'), false); // Indian mobiles start with 5-9
@@ -36,14 +36,14 @@ test('customer password hashing and verification is secure and timing-safe', () 
 });
 
 test('customer session tokens encode payload, sign cryptographically, and reject tampering', async () => {
-  const customer = { id: 'cust-12345', phone: '8637054105', name: 'Sourav' };
+  const customer = { id: 'cust-12345', phone: '8967721082', name: 'Sourav' };
   const token = await createCustomerSession(customer);
 
   assert.equal(typeof token, 'string');
   const verified = await verifyCustomerSession(token);
   assert.ok(verified);
   assert.equal(verified.id, 'cust-12345');
-  assert.equal(verified.phone, '8637054105');
+  assert.equal(verified.phone, '8967721082');
   assert.equal(verified.name, 'Sourav');
 
   // Tampered payload
@@ -85,12 +85,12 @@ test('customer table creation in initialize script is additive and idempotent', 
 
     // Insert customer with ban and activity fields
     db.prepare('INSERT INTO Customer (id, phone, passwordHash, name, state, pincode, isBanned, banReason, bannedAt, lastActiveAt, lastLoginAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)')
-      .run('c1', '8637054105', 'salt:hash', 'User One', 'West Bengal', '721253', 1, 'Policy violation: unpaid order refusals');
+      .run('c1', '8967721082', 'salt:hash', 'User One', 'West Bengal', '721253', 1, 'Policy violation: unpaid order refusals');
 
     // Run initializer again — must not throw or overwrite
     initialize();
     const row = db.prepare('SELECT * FROM Customer WHERE id = ?').get('c1');
-    assert.equal(row.phone, '8637054105');
+    assert.equal(row.phone, '8967721082');
     assert.equal(row.isBanned, 1);
     assert.equal(row.banReason, 'Policy violation: unpaid order refusals');
   } finally {

@@ -282,7 +282,7 @@ drawCard('Source Code Repository & Version Control Governance', [
   { label: 'Primary GitHub Repository', value: 'https://github.com/shonkuweb/Sabujkuthi.git' },
   { label: 'Production Branch', value: 'main (Protected, verified with local build & test gates)' },
   { label: 'Technology Authorship', value: 'ShonkuWEB Technologies (Jit D, Co-Founder & Isha Karmakar, Co-Founder)' },
-  { label: 'Nursery Headquarters', value: 'Nayabasat, West Bengal 721253, India (Phone: +91 86370 54105)' },
+  { label: 'Nursery Headquarters', value: 'Nayabasat, West Bengal 721253, India (Phone: +91 89677 21082)' },
   { label: 'Architecture Philosophy', value: 'Zero client-trust pricing, integer-paise calculations, and embedded zero-latency database.' }
 ]);
 
