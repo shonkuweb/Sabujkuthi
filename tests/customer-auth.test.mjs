@@ -73,6 +73,8 @@ test('customer table creation in initialize script is additive and idempotent', 
     assert.ok(tableInfo.some(c => c.name === 'id'));
     assert.ok(tableInfo.some(c => c.name === 'phone'));
     assert.ok(tableInfo.some(c => c.name === 'passwordHash'));
+    assert.ok(tableInfo.some(c => c.name === 'email'));
+    assert.ok(tableInfo.some(c => c.name === 'address'));
     assert.ok(tableInfo.some(c => c.name === 'state'));
     assert.ok(tableInfo.some(c => c.name === 'pincode'));
     assert.ok(tableInfo.some(c => c.name === 'isBanned'));
@@ -210,6 +212,122 @@ test('customer account LTV, last purchased, and activity tracking calculate corr
     const buyer = db.prepare("SELECT lastActiveAt FROM Customer WHERE id = 'c-buyer'").get();
     const diffMs = Date.now() - new Date(buyer.lastActiveAt).getTime();
     assert.ok(diffMs <= 30 * 60 * 1000, 'Buyer should be recognized as active now');
+  } finally {
+    db.close();
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('admin can edit customer account details (phone, address, etc.) and validation rejects invalid phone/collisions', () => {
+  const dir = mkdtempSync(path.join(tmpdir(), 'sabujkuthi-edit-'));
+  const filename = path.join(dir, 'test.db');
+  const db = new Database(filename);
+  try {
+    db.exec('CREATE TABLE Settings (key TEXT PRIMARY KEY, value TEXT NOT NULL)');
+    execFileSync(
+      process.execPath,
+      ['scripts/initialize-categories.cjs'],
+      { env: { ...process.env, DATABASE_URL: `file:${filename}` }, stdio: 'pipe' }
+    );
+
+    // Create 2 customers
+    db.prepare('INSERT INTO Customer (id, phone, passwordHash, name, state, pincode, updatedAt) VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)')
+      .run('cust-1', '9830011111', 'hash1', 'Original Name', 'West Bengal', '700001');
+    db.prepare('INSERT INTO Customer (id, phone, passwordHash, name, state, pincode, updatedAt) VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)')
+      .run('cust-2', '9830022222', 'hash2', 'Second Customer', 'Odisha', '751001');
+
+    // Simulate PATCH handler logic
+    const updateCustomer = (id, updates) => {
+      const customer = db.prepare('SELECT * FROM Customer WHERE id = ?').get(id);
+      if (!customer) throw new Error('Customer not found');
+
+      if (updates.phone !== undefined) {
+        const cleanPhone = normalizePhone(String(updates.phone));
+        if (!cleanPhone || !isValidPhone(cleanPhone)) throw new Error('Invalid phone number');
+        if (cleanPhone !== customer.phone) {
+          const conflict = db.prepare('SELECT id FROM Customer WHERE phone = ? AND id != ?').get(cleanPhone, id);
+          if (conflict) throw new Error('Phone collision error');
+          db.prepare('UPDATE Customer SET phone = ? WHERE id = ?').run(cleanPhone, id);
+        }
+      }
+
+      if (updates.name !== undefined) db.prepare('UPDATE Customer SET name = ? WHERE id = ?').run(updates.name, id);
+      if (updates.email !== undefined) db.prepare('UPDATE Customer SET email = ? WHERE id = ?').run(updates.email, id);
+      if (updates.address !== undefined) db.prepare('UPDATE Customer SET address = ? WHERE id = ?').run(updates.address, id);
+      if (updates.state !== undefined) db.prepare('UPDATE Customer SET state = ? WHERE id = ?').run(updates.state, id);
+      if (updates.pincode !== undefined) db.prepare('UPDATE Customer SET pincode = ? WHERE id = ?').run(updates.pincode, id);
+
+      return db.prepare('SELECT * FROM Customer WHERE id = ?').get(id);
+    };
+
+    // Successful update including phone and address
+    const updated = updateCustomer('cust-1', {
+      name: 'Updated Name',
+      phone: '9830099999',
+      address: 'Plot 45, Nayabasat, Midnapore',
+      email: 'updated@example.com',
+      state: 'West Bengal',
+      pincode: '721253',
+    });
+
+    assert.equal(updated.name, 'Updated Name');
+    assert.equal(updated.phone, '9830099999');
+    assert.equal(updated.address, 'Plot 45, Nayabasat, Midnapore');
+    assert.equal(updated.email, 'updated@example.com');
+    assert.equal(updated.state, 'West Bengal');
+    assert.equal(updated.pincode, '721253');
+
+    // Reject collision: trying to set cust-1 phone to cust-2 phone
+    assert.throws(
+      () => updateCustomer('cust-1', { phone: '9830022222' }),
+      /Phone collision error/
+    );
+
+    // Reject invalid phone format
+    assert.throws(
+      () => updateCustomer('cust-1', { phone: '12345' }),
+      /Invalid phone number/
+    );
+  } finally {
+    db.close();
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('admin can delete customer account and historical orders remain intact', () => {
+  const dir = mkdtempSync(path.join(tmpdir(), 'sabujkuthi-del-'));
+  const filename = path.join(dir, 'test.db');
+  const db = new Database(filename);
+  try {
+    db.exec('CREATE TABLE Settings (key TEXT PRIMARY KEY, value TEXT NOT NULL)');
+    execFileSync(
+      process.execPath,
+      ['scripts/initialize-categories.cjs'],
+      { env: { ...process.env, DATABASE_URL: `file:${filename}` }, stdio: 'pipe' }
+    );
+
+    // Create a customer
+    db.prepare('INSERT INTO Customer (id, phone, passwordHash, name, address, state, pincode, updatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)')
+      .run('c-delete-me', '9830055555', 'hash', 'To Delete', 'Old Address', 'West Bengal', '700001');
+
+    // Place an order for this customer
+    db.prepare(`INSERT INTO "Order" (id, orderNumber, receipt, checkoutTokenHash, requestHash, status, customerName, phone, address, pincode, itemsJson, subtotal, shipping, total, paymentMode, paidAt, createdAt, updatedAt)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`)
+      .run('ord-del-test', 3001, 'SK-3001', 'token-hash', 'req-hash', 'paid', 'To Delete', '9830055555', 'Old Address', '700001', '[]', 100000, 4000, 104000, 'razorpay', '2026-11-10T10:00:00.000Z', '2026-11-10T09:55:00.000Z');
+
+    // Admin deletes customer account
+    const deleteResult = db.prepare('DELETE FROM Customer WHERE id = ?').run('c-delete-me');
+    assert.equal(deleteResult.changes, 1);
+
+    // Customer record is gone
+    const customer = db.prepare('SELECT * FROM Customer WHERE id = ?').get('c-delete-me');
+    assert.equal(customer, undefined);
+
+    // Historical order is still intact
+    const order = db.prepare('SELECT * FROM "Order" WHERE id = ?').get('ord-del-test');
+    assert.ok(order);
+    assert.equal(order.receipt, 'SK-3001');
+    assert.equal(order.phone, '9830055555');
   } finally {
     db.close();
     rmSync(dir, { recursive: true, force: true });

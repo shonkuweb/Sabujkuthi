@@ -98,6 +98,8 @@ try {
       "phone" TEXT NOT NULL,
       "passwordHash" TEXT NOT NULL,
       "name" TEXT,
+      "email" TEXT,
+      "address" TEXT,
       "state" TEXT,
       "pincode" TEXT,
       "isBanned" BOOLEAN NOT NULL DEFAULT false,
@@ -170,6 +172,8 @@ try {
     }
     const customerColumns = db.prepare('PRAGMA table_info(Customer)').all();
     if (customerColumns.length) {
+      if (!customerColumns.some(col => col.name === 'email')) db.exec('ALTER TABLE "Customer" ADD COLUMN "email" TEXT');
+      if (!customerColumns.some(col => col.name === 'address')) db.exec('ALTER TABLE "Customer" ADD COLUMN "address" TEXT');
       if (!customerColumns.some(col => col.name === 'state')) db.exec('ALTER TABLE "Customer" ADD COLUMN "state" TEXT');
       if (!customerColumns.some(col => col.name === 'pincode')) db.exec('ALTER TABLE "Customer" ADD COLUMN "pincode" TEXT');
       if (!customerColumns.some(col => col.name === 'isBanned')) db.exec('ALTER TABLE "Customer" ADD COLUMN "isBanned" BOOLEAN NOT NULL DEFAULT false');

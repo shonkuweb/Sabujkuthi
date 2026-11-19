@@ -77,9 +77,9 @@ export async function GET(request) {
         lastPurchasedAt = orders[0].paidAt || orders[0].createdAt;
       }
 
-      // Address & email resolution
-      let email = null;
-      let address = null;
+      // Address & email resolution (customer profile takes precedence, fallback to historical order details)
+      let email = cust.email || null;
+      let address = cust.address || null;
       for (const o of orders) {
         if (!email && o.email) email = o.email;
         if (!address && o.address) address = o.address;
@@ -158,7 +158,8 @@ export async function GET(request) {
         a.phone.includes(query) ||
         a.state.toLowerCase().includes(query) ||
         a.pincode.includes(query) ||
-        (a.email && a.email.toLowerCase().includes(query))
+        (a.email && a.email.toLowerCase().includes(query)) ||
+        (a.address && a.address.toLowerCase().includes(query))
       );
     }
 

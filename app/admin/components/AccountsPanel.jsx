@@ -8,6 +8,7 @@ import {
   FiCheck,
   FiClock,
   FiDollarSign,
+  FiEdit2,
   FiEye,
   FiLock,
   FiMail,
@@ -18,11 +19,13 @@ import {
   FiShield,
   FiShoppingBag,
   FiSlash,
+  FiTrash2,
   FiUser,
   FiUsers,
   FiX,
   FiXCircle
 } from "react-icons/fi";
+import { INDIAN_STATES, getStateFromPincode } from "../../../lib/indian-regions.mjs";
 import styles from "./AccountsPanel.module.css";
 
 const money = (val) =>
@@ -83,8 +86,28 @@ export default function AccountsPanel({ active }) {
 
   const [ordersModalAccount, setOrdersModalAccount] = useState(null);
 
+  // Edit Modal State
+  const [editModalAccount, setEditModalAccount] = useState(null);
+  const [editForm, setEditForm] = useState({
+    name: "",
+    phone: "",
+    email: "",
+    address: "",
+    state: "",
+    pincode: "",
+  });
+  const [editError, setEditError] = useState("");
+  const [isSubmittingEdit, setIsSubmittingEdit] = useState(false);
+
+  // Delete Modal State
+  const [deleteModalAccount, setDeleteModalAccount] = useState(null);
+  const [deleteError, setDeleteError] = useState("");
+  const [isSubmittingDelete, setIsSubmittingDelete] = useState(false);
+
   const banDialogRef = useRef(null);
   const ordersDialogRef = useRef(null);
+  const editDialogRef = useRef(null);
+  const deleteDialogRef = useRef(null);
 
   const showToast = (msg) => {
     setToast(msg);
@@ -138,6 +161,28 @@ export default function AccountsPanel({ active }) {
       if (dialog.open) dialog.close();
     }
   }, [ordersModalAccount]);
+
+  // Manage native dialog for Edit Modal
+  useEffect(() => {
+    const dialog = editDialogRef.current;
+    if (!dialog) return;
+    if (editModalAccount) {
+      if (!dialog.open) dialog.showModal();
+    } else {
+      if (dialog.open) dialog.close();
+    }
+  }, [editModalAccount]);
+
+  // Manage native dialog for Delete Modal
+  useEffect(() => {
+    const dialog = deleteDialogRef.current;
+    if (!dialog) return;
+    if (deleteModalAccount) {
+      if (!dialog.open) dialog.showModal();
+    } else {
+      if (dialog.open) dialog.close();
+    }
+  }, [deleteModalAccount]);
 
   // Open Ban Modal
   const handleOpenBan = (account) => {
@@ -216,6 +261,132 @@ export default function AccountsPanel({ active }) {
       loadAccounts();
     } catch (err) {
       alert(err.message || "Failed to unban account.");
+    }
+  };
+
+  // Edit Account Handlers
+  const handleOpenEdit = (account) => {
+    setEditModalAccount(account);
+    setEditForm({
+      name: account.name || "",
+      phone: account.phone || "",
+      email: account.email || "",
+      address: account.address || "",
+      state: account.state || "",
+      pincode: account.pincode || "",
+    });
+    setEditError("");
+  };
+
+  const handleCloseEdit = () => {
+    if (isSubmittingEdit) return;
+    setEditModalAccount(null);
+    setEditError("");
+  };
+
+  const handlePincodeChange = (e) => {
+    const val = e.target.value.replace(/\D/g, "").slice(0, 6);
+    setEditForm((prev) => {
+      const next = { ...prev, pincode: val };
+      if (val.length === 6) {
+        const detected = getStateFromPincode(val);
+        if (detected) {
+          next.state = detected;
+        }
+      }
+      return next;
+    });
+  };
+
+  const handleSubmitEdit = async (e) => {
+    e.preventDefault();
+    if (!editModalAccount) return;
+
+    const rawPhone = editForm.phone.trim().replace(/\D/g, "");
+    const cleanPhone = rawPhone.length > 10 ? rawPhone.slice(-10) : rawPhone;
+
+    if (!cleanPhone || cleanPhone.length !== 10 || !/^[5-9]\d{9}$/.test(cleanPhone)) {
+      setEditError("Please enter a valid 10-digit Indian mobile number (starting with 5-9).");
+      return;
+    }
+
+    if (editForm.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(editForm.email.trim())) {
+      setEditError("Please enter a valid email address.");
+      return;
+    }
+
+    if (editForm.pincode && editForm.pincode.length !== 6) {
+      setEditError("Please enter a valid 6-digit delivery pincode.");
+      return;
+    }
+
+    setIsSubmittingEdit(true);
+    setEditError("");
+
+    try {
+      const res = await fetch(`/api/admin/accounts/${editModalAccount.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: editForm.name.trim(),
+          phone: cleanPhone,
+          email: editForm.email.trim(),
+          address: editForm.address.trim(),
+          state: editForm.state.trim(),
+          pincode: editForm.pincode.trim(),
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || "Failed to update account details.");
+      }
+
+      showToast(`Account details for ${cleanPhone} updated successfully.`);
+      handleCloseEdit();
+      loadAccounts();
+    } catch (err) {
+      setEditError(err.message || "An error occurred while updating the account.");
+    } finally {
+      setIsSubmittingEdit(false);
+    }
+  };
+
+  // Delete Account Handlers
+  const handleOpenDelete = (account) => {
+    setDeleteModalAccount(account);
+    setDeleteError("");
+  };
+
+  const handleCloseDelete = () => {
+    if (isSubmittingDelete) return;
+    setDeleteModalAccount(null);
+    setDeleteError("");
+  };
+
+  const handleSubmitDelete = async () => {
+    if (!deleteModalAccount) return;
+
+    setIsSubmittingDelete(true);
+    setDeleteError("");
+
+    try {
+      const res = await fetch(`/api/admin/accounts/${deleteModalAccount.id}`, {
+        method: "DELETE",
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || "Failed to delete account.");
+      }
+
+      showToast(`Account for ${deleteModalAccount.phone} deleted successfully.`);
+      handleCloseDelete();
+      loadAccounts();
+    } catch (err) {
+      setDeleteError(err.message || "Failed to delete account.");
+    } finally {
+      setIsSubmittingDelete(false);
     }
   };
 
@@ -586,6 +757,16 @@ export default function AccountsPanel({ active }) {
                     </button>
                   )}
 
+                  <button
+                    type="button"
+                    className={styles.btnEdit}
+                    onClick={() => handleOpenEdit(account)}
+                    title="Edit account details (name, phone, address, etc.)"
+                  >
+                    <FiEdit2 />
+                    <span>Edit Details</span>
+                  </button>
+
                   {account.isBanned ? (
                     <button
                       type="button"
@@ -605,6 +786,16 @@ export default function AccountsPanel({ active }) {
                       <span>Ban Account</span>
                     </button>
                   )}
+
+                  <button
+                    type="button"
+                    className={styles.btnDelete}
+                    onClick={() => handleOpenDelete(account)}
+                    title="Delete account permanently"
+                  >
+                    <FiTrash2 />
+                    <span>Delete</span>
+                  </button>
                 </div>
               </article>
             );
@@ -791,6 +982,289 @@ export default function AccountsPanel({ active }) {
                   onClick={() => setOrdersModalAccount(null)}
                 >
                   Close
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </dialog>
+
+      {/* Edit Customer Details Dialog */}
+      <dialog
+        ref={editDialogRef}
+        className={styles.modal}
+        aria-labelledby="edit-modal-title"
+        onCancel={(e) => {
+          e.preventDefault();
+          if (!isSubmittingEdit) handleCloseEdit();
+        }}
+        onClick={(e) => {
+          if (e.target === e.currentTarget && !isSubmittingEdit) {
+            handleCloseEdit();
+          }
+        }}
+      >
+        {editModalAccount && (
+          <div>
+            <div className={styles.modalHeader}>
+              <div className={styles.modalTitleBlock}>
+                <div className={`${styles.modalIconWrap} ${styles.iconEmerald}`}>
+                  <FiEdit2 />
+                </div>
+                <div>
+                  <h3 id="edit-modal-title" className={styles.modalTitle}>
+                    Edit Account Details
+                  </h3>
+                  <span className={styles.modalSubtitle}>
+                    Editing profile for +91 {editModalAccount.phone}
+                  </span>
+                </div>
+              </div>
+              <button
+                type="button"
+                className={styles.modalCloseBtn}
+                onClick={handleCloseEdit}
+                disabled={isSubmittingEdit}
+                aria-label="Close dialog"
+              >
+                <FiX />
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmitEdit} className={styles.modalBody}>
+              {editError && (
+                <div style={{ color: "#b91c1c", marginBottom: "14px", fontSize: "13.5px", fontWeight: "600" }}>
+                  {editError}
+                </div>
+              )}
+
+              <div className={styles.formGrid}>
+                {/* Full Name */}
+                <div className={styles.formField}>
+                  <label htmlFor="edit-customer-name" className={styles.label}>
+                    Full Name
+                  </label>
+                  <input
+                    id="edit-customer-name"
+                    type="text"
+                    className={styles.inputField}
+                    placeholder="e.g. Rahul Sen"
+                    value={editForm.name}
+                    onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                    disabled={isSubmittingEdit}
+                  />
+                </div>
+
+                {/* Mobile Number */}
+                <div className={styles.formField}>
+                  <label htmlFor="edit-customer-phone" className={styles.label}>
+                    Mobile Number <span style={{ color: "#ef4444" }}>*</span>
+                  </label>
+                  <div className={styles.phoneWrap}>
+                    <span className={styles.phonePrefix}>+91</span>
+                    <input
+                      id="edit-customer-phone"
+                      type="tel"
+                      maxLength={10}
+                      className={styles.phoneInput}
+                      placeholder="10-digit mobile number"
+                      value={editForm.phone}
+                      onChange={(e) => setEditForm({ ...editForm, phone: e.target.value.replace(/\D/g, "") })}
+                      required
+                      disabled={isSubmittingEdit}
+                    />
+                  </div>
+                </div>
+
+                {/* Email Address */}
+                <div className={styles.formField}>
+                  <label htmlFor="edit-customer-email" className={styles.label}>
+                    Email Address
+                  </label>
+                  <input
+                    id="edit-customer-email"
+                    type="email"
+                    className={styles.inputField}
+                    placeholder="e.g. customer@example.com"
+                    value={editForm.email}
+                    onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                    disabled={isSubmittingEdit}
+                  />
+                </div>
+
+                {/* Delivery Pincode */}
+                <div className={styles.formField}>
+                  <label htmlFor="edit-customer-pincode" className={styles.label}>
+                    Delivery Pincode
+                  </label>
+                  <input
+                    id="edit-customer-pincode"
+                    type="text"
+                    maxLength={6}
+                    className={styles.inputField}
+                    placeholder="6-digit pincode"
+                    value={editForm.pincode}
+                    onChange={handlePincodeChange}
+                    disabled={isSubmittingEdit}
+                  />
+                </div>
+
+                {/* Delivery State */}
+                <div className={`${styles.formField} ${styles.gridSpanFull}`}>
+                  <label htmlFor="edit-customer-state" className={styles.label}>
+                    State / Region
+                  </label>
+                  <select
+                    id="edit-customer-state"
+                    className={styles.inputField}
+                    value={editForm.state}
+                    onChange={(e) => setEditForm({ ...editForm, state: e.target.value })}
+                    disabled={isSubmittingEdit}
+                    style={{ cursor: "pointer", background: "#fff" }}
+                  >
+                    <option value="">-- Select State / Region --</option>
+                    {INDIAN_STATES.map((st) => (
+                      <option key={st} value={st}>
+                        {st}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Delivery Address */}
+                <div className={`${styles.formField} ${styles.gridSpanFull}`}>
+                  <label htmlFor="edit-customer-address" className={styles.label}>
+                    Shipping / Delivery Address
+                  </label>
+                  <textarea
+                    id="edit-customer-address"
+                    className={styles.textarea}
+                    rows={3}
+                    placeholder="Street, house/building, locality, landmark..."
+                    value={editForm.address}
+                    onChange={(e) => setEditForm({ ...editForm, address: e.target.value })}
+                    disabled={isSubmittingEdit}
+                  />
+                </div>
+              </div>
+
+              <div className={styles.modalActions}>
+                <button
+                  type="button"
+                  className={styles.btnModalCancel}
+                  onClick={handleCloseEdit}
+                  disabled={isSubmittingEdit}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className={styles.btnModalSave}
+                  disabled={isSubmittingEdit}
+                >
+                  <FiCheck />
+                  <span>{isSubmittingEdit ? "Saving Changes..." : "Save Account Details"}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
+      </dialog>
+
+      {/* Delete Customer Account Dialog */}
+      <dialog
+        ref={deleteDialogRef}
+        className={styles.modal}
+        aria-labelledby="delete-modal-title"
+        onCancel={(e) => {
+          e.preventDefault();
+          if (!isSubmittingDelete) handleCloseDelete();
+        }}
+        onClick={(e) => {
+          if (e.target === e.currentTarget && !isSubmittingDelete) {
+            handleCloseDelete();
+          }
+        }}
+      >
+        {deleteModalAccount && (
+          <div>
+            <div className={styles.modalHeader}>
+              <div className={styles.modalTitleBlock}>
+                <div className={styles.modalIconWrap}>
+                  <FiTrash2 />
+                </div>
+                <div>
+                  <h3 id="delete-modal-title" className={styles.modalTitle}>
+                    Delete Customer Account
+                  </h3>
+                  <span className={styles.modalSubtitle}>
+                    Permanent removal of customer credentials &amp; profile
+                  </span>
+                </div>
+              </div>
+              <button
+                type="button"
+                className={styles.modalCloseBtn}
+                onClick={handleCloseDelete}
+                disabled={isSubmittingDelete}
+                aria-label="Close dialog"
+              >
+                <FiX />
+              </button>
+            </div>
+
+            <div className={styles.modalBody}>
+              <div className={styles.deleteWarningBox}>
+                <FiAlertTriangle className={styles.deleteWarningIcon} />
+                <div>
+                  <strong>Are you sure you want to permanently delete this customer account?</strong>
+                  <div style={{ marginTop: "4px" }}>
+                    This action will delete the login credentials and profile for this customer.
+                    Historical orders placed with this mobile number will remain safely preserved in the database for auditing and fulfillment records.
+                  </div>
+                </div>
+              </div>
+
+              <div className={styles.deleteCustomerInfo}>
+                <p style={{ margin: "0 0 6px" }}>
+                  <strong>Customer Name: </strong>{deleteModalAccount.name || "Unnamed Customer"}
+                </p>
+                <p style={{ margin: "0 0 6px" }}>
+                  <strong>Mobile Number: </strong>+91 {deleteModalAccount.phone}
+                </p>
+                <p style={{ margin: "0 0 6px" }}>
+                  <strong>Lifetime Spend: </strong>{money(deleteModalAccount.lifetimeValue)} ({deleteModalAccount.totalOrders} paid {deleteModalAccount.totalOrders === 1 ? "order" : "orders"})
+                </p>
+                {deleteModalAccount.address && (
+                  <p style={{ margin: 0 }}>
+                    <strong>Saved Address: </strong>{deleteModalAccount.address}
+                  </p>
+                )}
+              </div>
+
+              {deleteError && (
+                <div style={{ color: "#b91c1c", marginBottom: "14px", fontSize: "13.5px", fontWeight: "600" }}>
+                  {deleteError}
+                </div>
+              )}
+
+              <div className={styles.modalActions}>
+                <button
+                  type="button"
+                  className={styles.btnModalCancel}
+                  onClick={handleCloseDelete}
+                  disabled={isSubmittingDelete}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className={styles.btnModalBan}
+                  onClick={handleSubmitDelete}
+                  disabled={isSubmittingDelete}
+                >
+                  <FiTrash2 />
+                  <span>{isSubmittingDelete ? "Deleting Account..." : "Confirm & Delete Account"}</span>
                 </button>
               </div>
             </div>

@@ -183,6 +183,8 @@ model Customer {
   phone        String    @unique
   passwordHash String
   name         String?
+  email        String?
+  address      String?
   state        String?
   pincode      String?
   isBanned     Boolean   @default(false)
