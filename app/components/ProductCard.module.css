@@ -17,7 +17,6 @@
 @media (min-width: 768px) {
   .card {
     border-radius: 14px;
-    max-width: 250px;
     width: 100%;
     transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   }

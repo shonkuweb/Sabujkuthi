@@ -61,7 +61,7 @@
     padding: 28px 28px 40px;
   }
   .grid {
-    grid-template-columns: repeat(auto-fill, minmax(200px, 240px));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 18px;
   }
   .section {
@@ -75,7 +75,7 @@
     margin: 0 auto;
   }
   .grid {
-    grid-template-columns: repeat(auto-fill, minmax(210px, 240px));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 22px;
   }
   .heading {
@@ -98,7 +98,7 @@
     padding: 40px clamp(32px, 4vw, 64px) 64px;
   }
   .grid {
-    grid-template-columns: repeat(auto-fill, minmax(210px, 240px));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 24px;
   }
 }
