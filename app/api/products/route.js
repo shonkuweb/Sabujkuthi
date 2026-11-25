@@ -11,13 +11,15 @@ const money = value => typeof value === 'string' && /^\d+(\.\d{1,2})?$/.test(val
 function publicProduct(product) {
   let adeniumOptions = null;
   try { adeniumOptions = product.adeniumOptions ? JSON.parse(product.adeniumOptions) : null; } catch {}
+  let statePricing = null;
+  try { statePricing = product.statePricing ? JSON.parse(product.statePricing) : null; } catch {}
   let categoryIds = [];
   try { categoryIds = product.categoryIds ? JSON.parse(product.categoryIds) : []; } catch {}
   if (!Array.isArray(categoryIds)) categoryIds = [];
   if (!categoryIds.length && product.categoryId) {
     categoryIds = [product.categoryId];
   }
-  return { ...product, adeniumOptions, categoryIds };
+  return { ...product, adeniumOptions, statePricing, categoryIds };
 }
 
 export async function GET(request) {
@@ -88,6 +90,40 @@ async function save(request, update) {
     const deliveryStates = typeof data.deliveryStates === 'string' ? data.deliveryStates.trim() || null : null;
     const deliveryPincodes = typeof data.deliveryPincodes === 'string' ? data.deliveryPincodes.trim() || null : null;
 
+    let statePricingJson = null;
+    if (data.statePricing != null && data.statePricing !== '') {
+      let parsedStatePricing = data.statePricing;
+      if (typeof parsedStatePricing === 'string') {
+        try { parsedStatePricing = JSON.parse(parsedStatePricing); } catch {
+          return NextResponse.json({ error: 'Statewise pricing must be a valid JSON object.' }, { status: 400 });
+        }
+      }
+      if (typeof parsedStatePricing === 'object' && parsedStatePricing !== null) {
+        const sanitized = {};
+        for (const [st, val] of Object.entries(parsedStatePricing)) {
+          if (!st || typeof st !== 'string') continue;
+          const stateName = st.trim();
+          if (typeof val === 'object' && val !== null) {
+            if (!money(String(val.price ?? ''))) {
+              return NextResponse.json({ error: `Enter a valid price for ${stateName}.` }, { status: 400 });
+            }
+            if (val.oldPrice != null && val.oldPrice !== '' && (!money(String(val.oldPrice)) || Number(val.oldPrice) <= Number(val.price))) {
+              return NextResponse.json({ error: `Original price for ${stateName} must be greater than selling price.` }, { status: 400 });
+            }
+            sanitized[stateName] = {
+              price: String(Number(val.price)),
+              ...(val.oldPrice ? { oldPrice: String(Number(val.oldPrice)) } : {}),
+            };
+          } else if (money(String(val ?? ''))) {
+            sanitized[stateName] = { price: String(Number(val)) };
+          }
+        }
+        if (Object.keys(sanitized).length > 0) {
+          statePricingJson = JSON.stringify(sanitized);
+        }
+      }
+    }
+
     const fields = {
       title,
       categoryId: primaryCategoryId,
@@ -97,6 +133,7 @@ async function save(request, update) {
       deliveryPincodes,
       price: String(Number(data.price)),
       oldPrice: data.oldPrice ? String(Number(data.oldPrice)) : null,
+      statePricing: statePricingJson,
       description: data.description?.trim() || null, image: imageUrl, image2: imageUrl2,
       inStock: data.inStock !== false, isPublished: data.isPublished !== false,
     };

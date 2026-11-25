@@ -31,6 +31,7 @@ const blank = {
   deliveryPincodes: "",
   price: "",
   oldPrice: "",
+  statePricing: {},
   description: "",
   image: "",
   image2: "",
@@ -63,6 +64,9 @@ export default function InventoryPanel() {
   const [selectedCatFilter, setSelectedCatFilter] = useState("");
   const [stockFilter, setStockFilter] = useState("all"); // 'all' | 'in_stock' | 'sold_out'
   const [viewMode, setViewMode] = useState("grid"); // 'grid' | 'list'
+  const [newStateName, setNewStateName] = useState("");
+  const [newStatePrice, setNewStatePrice] = useState("");
+  const [newStateOldPrice, setNewStateOldPrice] = useState("");
 
   const fileRef = useRef(null);
   const fileRef2 = useRef(null);
@@ -94,6 +98,14 @@ export default function InventoryPanel() {
       }
       if (!catIds.length && product.categoryId) catIds = [product.categoryId];
     }
+    let statePricing = {};
+    if (product?.statePricing) {
+      if (typeof product.statePricing === "string") {
+        try { statePricing = JSON.parse(product.statePricing); } catch {}
+      } else if (typeof product.statePricing === "object") {
+        statePricing = { ...product.statePricing };
+      }
+    }
     setForm(product ? {
       ...blank,
       ...product,
@@ -102,12 +114,17 @@ export default function InventoryPanel() {
       shippingScope: product.shippingScope || (product.deliveryPincodes ? "pincodes" : "all_india"),
       deliveryStates: product.deliveryStates || "",
       deliveryPincodes: product.deliveryPincodes || "",
+      price: product.price || "",
       oldPrice: product.oldPrice || "",
+      statePricing: statePricing || {},
       image: product.image || "",
       image2: product.image2 || "",
       description: product.description || "",
       ...Object.fromEntries(["plantCare", "deliveryReturns", "deliveryNote", "replacementInfo", "deliveryInfo", "supportInfo", "packagingInfo", "soldLast24Hours"].map(key => [key, product[key] ?? ""]))
     } : { ...blank });
+    setNewStateName("");
+    setNewStatePrice("");
+    setNewStateOldPrice("");
     setError(""); setNotice(""); setProcessing(false);
   };
 
@@ -116,8 +133,45 @@ export default function InventoryPanel() {
     setForm(null);
     setProcessing(false);
     setError("");
+    setNewStateName("");
+    setNewStatePrice("");
+    setNewStateOldPrice("");
     setIsDraggingPrimary(false);
     setIsDraggingSecondary(false);
+  };
+
+  const addStatePricing = () => {
+    if (!newStateName) return;
+    if (!newStatePrice || isNaN(Number(newStatePrice)) || Number(newStatePrice) < 0) {
+      setError("Please enter a valid price for the selected state.");
+      return;
+    }
+    if (newStateOldPrice && (isNaN(Number(newStateOldPrice)) || Number(newStateOldPrice) <= Number(newStatePrice))) {
+      setError("State original price must be greater than the state selling price.");
+      return;
+    }
+    setError("");
+    setForm(current => ({
+      ...current,
+      statePricing: {
+        ...(current.statePricing || {}),
+        [newStateName]: {
+          price: String(Number(newStatePrice)),
+          ...(newStateOldPrice ? { oldPrice: String(Number(newStateOldPrice)) } : {}),
+        },
+      },
+    }));
+    setNewStateName("");
+    setNewStatePrice("");
+    setNewStateOldPrice("");
+  };
+
+  const removeStatePricing = (stateToRemove) => {
+    setForm(current => {
+      const updated = { ...(current.statePricing || {}) };
+      delete updated[stateToRemove];
+      return { ...current, statePricing: updated };
+    });
   };
 
   const change = (key, value) => setForm(current => ({ ...current, [key]: value }));
@@ -365,6 +419,108 @@ export default function InventoryPanel() {
                 <label className={styles.label} htmlFor="product-old-price">Original price (₹, optional)</label>
                 <input className={styles.nameInput} id="product-old-price" type="number" min="0" max="10000000" step="0.01" value={form.oldPrice} onChange={event => change("oldPrice", event.target.value)} placeholder="Before discount" />
               </div>
+            </div>
+
+            {/* Statewise Pricing */}
+            <div className={invStyles.statePricingSection}>
+              <div className={invStyles.statePricingHeader}>
+                <h4>Statewise Pricing (Optional)</h4>
+              </div>
+              <p className={styles.hint} style={{ marginTop: 0, marginBottom: 12 }}>
+                Set custom pricing for customers located in specific states. At checkout, customers from these states will automatically be charged their state rate.
+              </p>
+
+              <div className={invStyles.statePricingAddRow}>
+                <div>
+                  <label className={styles.label} style={{ fontSize: 11, marginBottom: 4 }}>State / Territory</label>
+                  <select
+                    className={styles.nameInput}
+                    value={newStateName}
+                    onChange={e => setNewStateName(e.target.value)}
+                  >
+                    <option value="">-- Choose state --</option>
+                    {INDIAN_STATES.filter(st => !form.statePricing || !form.statePricing[st]).map(st => (
+                      <option key={st} value={st}>{st}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className={styles.label} style={{ fontSize: 11, marginBottom: 4 }}>State price (₹)</label>
+                  <input
+                    className={styles.nameInput}
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    placeholder="e.g. 899"
+                    value={newStatePrice}
+                    onChange={e => setNewStatePrice(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label className={styles.label} style={{ fontSize: 11, marginBottom: 4 }}>Original price (₹, opt.)</label>
+                  <input
+                    className={styles.nameInput}
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    placeholder="e.g. 1299"
+                    value={newStateOldPrice}
+                    onChange={e => setNewStateOldPrice(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <button
+                    type="button"
+                    className={styles.secondary}
+                    style={{ height: 38, padding: "0 14px", whiteSpace: "nowrap" }}
+                    onClick={addStatePricing}
+                    disabled={!newStateName || !newStatePrice}
+                  >
+                    <FiPlus aria-hidden="true" /> Add State Price
+                  </button>
+                </div>
+              </div>
+
+              {form.statePricing && Object.keys(form.statePricing).length > 0 ? (
+                <table className={invStyles.statePricingTable}>
+                  <thead>
+                    <tr>
+                      <th>State</th>
+                      <th>Selling Price</th>
+                      <th>Original Price</th>
+                      <th style={{ width: 60, textAlign: "center" }}>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {Object.entries(form.statePricing).map(([st, info]) => {
+                      const p = typeof info === "object" ? info.price : info;
+                      const op = typeof info === "object" ? info.oldPrice : "";
+                      return (
+                        <tr key={st}>
+                          <td><strong>{st}</strong></td>
+                          <td style={{ color: "#1b5e3b", fontWeight: 600 }}>₹{p}</td>
+                          <td style={{ color: "#78857d" }}>{op ? `₹${op}` : "—"}</td>
+                          <td style={{ textAlign: "center" }}>
+                            <button
+                              type="button"
+                              className={invStyles.statePricingRemoveBtn}
+                              title={`Remove ${st} pricing`}
+                              aria-label={`Remove ${st} pricing`}
+                              onClick={() => removeStatePricing(st)}
+                            >
+                              <FiTrash2 aria-hidden="true" />
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              ) : (
+                <p className={styles.hint} style={{ fontStyle: "italic", margin: "4px 0 0" }}>
+                  No state overrides added. Default price (₹{form.price || "0.00"}) applies across all states.
+                </p>
+              )}
             </div>
 
             {/* Images */}
@@ -772,6 +928,11 @@ export default function InventoryPanel() {
                           </span>
                         ))}
                         <span className={invStyles.shippingPill}>{scopeLabel}</span>
+                        {product.statePricing && Object.keys(product.statePricing).length > 0 && (
+                          <span className={invStyles.shippingPill} style={{ background: "#eaf5ee", color: "#196939" }}>
+                            🏷️ {Object.keys(product.statePricing).length} States
+                          </span>
+                        )}
                       </div>
                     </div>
 
@@ -878,6 +1039,11 @@ export default function InventoryPanel() {
                             {product.oldPrice && (
                               <div style={{ fontSize: 11, color: "#8a968f", textDecoration: "line-through" }}>
                                 ₹{formatRupee(product.oldPrice)}
+                              </div>
+                            )}
+                            {product.statePricing && Object.keys(product.statePricing).length > 0 && (
+                              <div style={{ fontSize: 10, color: "#257a46", marginTop: 2, fontWeight: 500 }}>
+                                🏷️ {Object.keys(product.statePricing).length} state prices
                               </div>
                             )}
                           </div>

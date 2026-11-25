@@ -10,6 +10,7 @@ export async function GET(request) {
       id: true, orderNumber: true, receipt: true, razorpayOrderId: true, razorpayPaymentId: true, status: true,
       fulfillmentStatus: true, customerName: true, phone: true, email: true, address: true, pincode: true,
       itemsJson: true, subtotal: true, shipping: true, total: true, currency: true, paymentMode: true, paidAt: true, createdAt: true,
+      courier: true, courierCharge: true,
     } });
     return checkoutResponse(orders.map(({ itemsJson, ...order }) => ({ ...order, receipt: orderReference(order), items: JSON.parse(itemsJson) })));
   } catch { return checkoutResponse({ error: 'Unable to load paid orders.' }, 500); }

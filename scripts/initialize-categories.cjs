@@ -54,6 +54,7 @@ try {
         categoryId: 'TEXT REFERENCES Category(id) ON DELETE SET NULL',
         categoryIds: 'TEXT',
         oldPrice: 'TEXT',
+        statePricing: 'TEXT',
         inStock: 'BOOLEAN NOT NULL DEFAULT true',
         isPublished: 'BOOLEAN NOT NULL DEFAULT false',
         image2: 'TEXT',
@@ -186,6 +187,8 @@ try {
     if (!orderColumns.some(column => column.name === 'orderNumber')) db.exec('ALTER TABLE "Order" ADD COLUMN "orderNumber" INTEGER');
     if (!orderColumns.some(column => column.name === 'couponCode')) db.exec('ALTER TABLE "Order" ADD COLUMN "couponCode" TEXT');
     if (!orderColumns.some(column => column.name === 'affiliateId')) db.exec('ALTER TABLE "Order" ADD COLUMN "affiliateId" TEXT');
+    if (!orderColumns.some(column => column.name === 'courier')) db.exec("ALTER TABLE \"Order\" ADD COLUMN \"courier\" TEXT DEFAULT 'dtdc'");
+    if (!orderColumns.some(column => column.name === 'courierCharge')) db.exec('ALTER TABLE "Order" ADD COLUMN "courierCharge" INTEGER');
     db.exec('CREATE INDEX IF NOT EXISTS "Order_affiliateId_idx" ON "Order"("affiliateId")');
     db.exec('CREATE INDEX IF NOT EXISTS "Order_couponCode_idx" ON "Order"("couponCode")');
 

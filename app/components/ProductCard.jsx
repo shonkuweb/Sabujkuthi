@@ -3,12 +3,16 @@
 import Link from "next/link";
 import { FiImage } from "react-icons/fi";
 import { useCart } from "../context/CartContext";
+import { useCustomer } from "../context/CustomerContext";
+import { getProductPriceInfo } from "../../lib/product-pricing.mjs";
 import styles from "./ProductCard.module.css";
 
 export default function ProductCard({ product }) {
   const { addItem, showCartAfterAdd } = useCart();
-  const price = Number(product.price);
-  const original = Number(product.oldPrice);
+  const { customer } = useCustomer();
+  const priceInfo = getProductPriceInfo(product, { state: customer?.state });
+  const price = Number(priceInfo.price);
+  const original = Number(priceInfo.oldPrice || product.oldPrice);
   const discount = original > price ? Math.round((original - price) / original * 100) : 0;
   const format = value => Number(value).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   const hasVariants = product.adeniumOptions && Object.keys(product.adeniumOptions).length > 0;

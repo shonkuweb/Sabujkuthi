@@ -753,3 +753,84 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* Statewise Pricing */
+.statePricingSection {
+  margin: 18px 0 24px;
+  padding: 16px;
+  background: #f7faf7;
+  border: 1px solid #dce8df;
+  border-radius: 12px;
+}
+
+.statePricingHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.statePricingHeader h4 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a3a27;
+}
+
+.statePricingAddRow {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr 1fr auto;
+  gap: 10px;
+  align-items: flex-end;
+  margin-bottom: 14px;
+}
+
+.statePricingTable {
+  width: 100%;
+  border-collapse: collapse;
+  background: #ffffff;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #e2ebe4;
+}
+
+.statePricingTable th {
+  background: #edf4ee;
+  color: #274c35;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  text-align: left;
+  padding: 8px 12px;
+}
+
+.statePricingTable td {
+  padding: 8px 12px;
+  font-size: 13px;
+  border-top: 1px solid #f0f4f1;
+  vertical-align: middle;
+}
+
+.statePricingRemoveBtn {
+  background: transparent;
+  border: none;
+  color: #c93b3b;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  transition: all 0.15s ease;
+}
+
+.statePricingRemoveBtn:hover {
+  background: #fdf2f2;
+  color: #991b1b;
+}
+
+@media (max-width: 640px) {
+  .statePricingAddRow {
+    grid-template-columns: 1fr;
+  }
+}

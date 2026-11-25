@@ -11,6 +11,8 @@ import { useStoreSettings } from "../context/StoreSettingsContext";
 import { deliveryPaise, FREE_DELIVERY_THRESHOLD } from "../../lib/shipping.mjs";
 import { checkoutPost, loadRazorpay } from "../../lib/razorpay-checkout";
 import { calculateDiscount } from "../../lib/discounts.mjs";
+import { getStateFromPincode } from "../../lib/indian-regions.mjs";
+import { getProductPriceInfo } from "../../lib/product-pricing.mjs";
 import DiscountNudgeBanner from "../components/DiscountNudgeBanner";
 import styles from "./page.module.css";
 
@@ -38,12 +40,28 @@ export default function CheckoutPage() {
   const [pending, setPending] = useState(null);
   const [testMode, setTestMode] = useState(false);
   const attempt = useRef(null);
-  const subtotal = items.reduce((sum, item) => sum + Math.round(Number(item.price) * 100) * item.qty, 0);
+  const [courier, setCourier] = useState('dtdc');
+  const customerState = customer?.state || getStateFromPincode(form.pincode) || null;
+
+  const effectiveItems = items.map(item => {
+    const priceInfo = getProductPriceInfo(item, { state: customerState, variant: item.variant });
+    return {
+      ...item,
+      effectivePrice: priceInfo.price,
+      effectiveOldPrice: priceInfo.oldPrice,
+      isStatePrice: priceInfo.isStatePrice,
+      matchedState: priceInfo.matchedState,
+    };
+  });
+
+  const subtotal = effectiveItems.reduce((sum, item) => sum + Math.round(Number(item.effectivePrice) * 100) * item.qty, 0);
   const discountRule = offersSettings?.discountRule;
   const subtotalRupees = Math.floor(subtotal / 100);
   const discountRupees = calculateDiscount(subtotalRupees, discountRule);
   const discountPaise = discountRupees * 100;
-  const shipping = deliveryPaise(subtotal, deliverySettings);
+  const dtdcShipping = deliveryPaise(subtotal, deliverySettings, 'dtdc');
+  const bluedartShipping = deliveryPaise(subtotal, deliverySettings, 'bluedart');
+  const shipping = courier === 'bluedart' ? bluedartShipping : dtdcShipping;
   const total = Math.max(100, subtotal - discountPaise + shipping);
 
   const [couponInput, setCouponInput] = useState('');
@@ -126,8 +144,9 @@ export default function CheckoutPage() {
         if (existing.status === 'paid') { finish(existing.order, pending.token); return; }
       }
       const payload = {
-        customer: form,
+        customer: { ...form, state: customerState || undefined },
         items: items.map(item => ({ slug: item.slug, qty: item.qty, variant: item.variant || null })),
+        courier,
         expectedTotal: total,
         couponCode: appliedCoupon?.couponCode || undefined
       };
@@ -187,15 +206,84 @@ export default function CheckoutPage() {
                 ].map(([key, label, type, autoComplete]) => <label className={styles.label} key={key}>{label}<input type={type} autoComplete={autoComplete} required={key !== 'email'} maxLength={key === 'pincode' ? 6 : key === 'phone' ? 16 : key === 'name' ? 100 : 254} minLength={key === 'name' ? 2 : undefined} inputMode={key === 'pincode' ? 'numeric' : undefined} pattern={key === 'pincode' ? '[1-9][0-9]{5}' : key === 'phone' ? '(\\+?91)?[6-9][0-9]{9}' : undefined} value={form[key]} onChange={event => setForm(current => ({ ...current, [key]: event.target.value }))} /></label>)}
                 <label className={styles.label}>Full delivery address<textarea rows={3} autoComplete="street-address" required minLength={10} maxLength={1000} value={form.address} onChange={event => setForm(current => ({ ...current, address: event.target.value }))} placeholder="House number, street, area and city" /></label>
               </section>
+
+              {/* Courier Selection */}
+              <section className={styles.courierCard}>
+                <h2><span>2</span>Select Delivery Courier</h2>
+                <div className={styles.courierList} role="radiogroup" aria-label="Delivery partner options">
+                  <label
+                    className={`${styles.courierOption} ${courier === 'dtdc' ? styles.courierOptionActive : ''}`}
+                    onClick={() => setCourier('dtdc')}
+                  >
+                    <input
+                      type="radio"
+                      name="courier"
+                      value="dtdc"
+                      checked={courier === 'dtdc'}
+                      onChange={() => setCourier('dtdc')}
+                    />
+                    <div className={styles.courierDetails}>
+                      <div className={styles.courierTopRow}>
+                        <span className={styles.courierName}>📦 DTDC Standard Delivery</span>
+                        <span className={`${styles.courierPrice} ${dtdcShipping === 0 ? styles.courierPriceFree : ''}`}>
+                          {dtdcShipping === 0 ? 'FREE' : `₹${money(dtdcShipping)}`}
+                        </span>
+                      </div>
+                      <p className={styles.courierDesc}>
+                        Economical delivery · Condition is good, takes 5–8 business days.
+                      </p>
+                    </div>
+                  </label>
+
+                  <label
+                    className={`${styles.courierOption} ${courier === 'bluedart' ? styles.courierOptionActive : ''}`}
+                    onClick={() => setCourier('bluedart')}
+                  >
+                    <input
+                      type="radio"
+                      name="courier"
+                      value="bluedart"
+                      checked={courier === 'bluedart'}
+                      onChange={() => setCourier('bluedart')}
+                    />
+                    <div className={styles.courierDetails}>
+                      <div className={styles.courierTopRow}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <span className={styles.courierName}>⚡ Blue Dart Express</span>
+                          <span className={`${styles.courierBadge} ${styles.courierBadgeExpress}`}>Fast & Quality</span>
+                        </div>
+                        <span className={`${styles.courierPrice} ${bluedartShipping === 0 ? styles.courierPriceFree : ''}`}>
+                          {bluedartShipping === 0 ? 'FREE' : `₹${money(bluedartShipping)}`}
+                        </span>
+                      </div>
+                      <p className={styles.courierDesc}>
+                        Fast air courier · Superior plant care quality, takes 2–4 business days.
+                      </p>
+                    </div>
+                  </label>
+                </div>
+              </section>
             </div>
             <div className={styles.rightCol}>
-              <section className={styles.card}><h2><span>2</span>Order summary</h2>
+              <section className={styles.card}><h2><span>3</span>Order summary</h2>
                 {items.length > 0 && (
                   <div style={{ marginBottom: '1rem' }}>
                     <DiscountNudgeBanner subtotal={subtotal} />
                   </div>
                 )}
-                {!items.length ? <p className={styles.empty}>Your cart is empty. <Link href="/">Browse plants</Link></p> : items.map(item => <div className={styles.line} key={JSON.stringify([item.slug, item.variant])}>{item.image && <img src={item.image} alt="" />}<div><strong>{item.title}</strong><span>{item.variant ? `${item.variant} · ` : ''}Qty: {item.qty}</span></div><strong>₹{money(Math.round(Number(item.price) * 100) * item.qty)}</strong></div>)}
+                {!effectiveItems.length ? <p className={styles.empty}>Your cart is empty. <Link href="/">Browse plants</Link></p> : effectiveItems.map(item => (
+                  <div className={styles.line} key={JSON.stringify([item.slug, item.variant])}>
+                    {item.image && <img src={item.image} alt="" />}
+                    <div>
+                      <strong>{item.title}</strong>
+                      <span>{item.variant ? `${item.variant} · ` : ''}Qty: {item.qty}</span>
+                      {item.isStatePrice && (
+                        <span className={styles.statePriceBadge}>Special rate for {item.matchedState}</span>
+                      )}
+                    </div>
+                    <strong>₹{money(Math.round(Number(item.effectivePrice) * 100) * item.qty)}</strong>
+                  </div>
+                ))}
                 {/* Affiliate Coupon Input */}
                 <div className={styles.couponSection}>
                   <div className={styles.couponInputRow}>
@@ -228,7 +316,7 @@ export default function CheckoutPage() {
                   {discountPaise > 0 && (
                     <p style={{ color: '#16a34a' }}><span>Discount ({discountRule?.title || 'Offer'})</span><strong>-₹{money(discountPaise)}</strong></p>
                   )}
-                  <p><span>Delivery</span><strong>{shipping === 0 ? 'FREE' : `₹${money(shipping)}`}</strong></p>
+                  <p><span>Delivery ({courier === 'bluedart' ? 'Blue Dart Express' : 'DTDC Standard'})</span><strong>{shipping === 0 ? 'FREE' : `₹${money(shipping)}`}</strong></p>
                   <p className={styles.total}><span>Total payable</span><strong>₹{money(total)}</strong></p>
                 </div>
                 <p className={styles.hint}>Free delivery on orders ₹{(deliverySettings?.freeDeliveryThreshold ?? FREE_DELIVERY_THRESHOLD).toLocaleString('en-IN')} and above. Prices are checked again before payment.</p>

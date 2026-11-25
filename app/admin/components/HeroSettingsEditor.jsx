@@ -271,7 +271,7 @@ export default function HeroSettingsEditor({ onSavingChange }) {
             </div>
 
             <p className={heroStyles.sectionHint}>
-              Upload up to 5 images displayed on mobile phones and small screens. Recommended aspect ratio: 4:3, 1:1, or 9:16 portrait/square banners (e.g. 1080×1080 or 1080×1350).
+              Upload up to 5 images displayed on mobile phones and small screens. Recommended aspect ratio: 16:9 widescreen banners (e.g. 1920×1080 or 1280×720).
             </p>
 
             {mobileImages.length > 0 && (

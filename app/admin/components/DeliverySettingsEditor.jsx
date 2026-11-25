@@ -78,73 +78,100 @@ export default function DeliverySettingsEditor({ onSavingChange }) {
     );
   }
 
-  const charge = Number(settings.deliveryCharge) || 0;
-  const threshold = Number(settings.freeDeliveryThreshold) || 0;
+  const dtdcCharge = Number(settings.dtdcCharge ?? settings.deliveryCharge ?? 40);
+  const bluedartCharge = Number(settings.bluedartCharge ?? 90);
+  const threshold = Number(settings.freeDeliveryThreshold ?? 3999);
 
   return (
     <div className={styles.workspace}>
       <p className={styles.hint}>
-        Set your nursery delivery fee and free shipping conditions. These rules automatically apply to all cart totals, checkout orders, and customer announcements.
+        Configure courier rates for DTDC and Blue Dart, along with free delivery thresholds. At checkout, customers can choose between DTDC (economical, reliable) and Blue Dart (fast, priority care).
       </p>
 
       <form className={styles.editor} onSubmit={save} aria-label="Delivery settings">
         <fieldset className={styles.fields} disabled={saving}>
           <div className={styles.formColumns}>
             <div>
-              <label className={styles.label} htmlFor="delivery-charge">
-                Standard delivery charge (₹)
+              <label className={styles.label} htmlFor="dtdc-charge">
+                DTDC Standard delivery charge (₹)
               </label>
               <input
-                id="delivery-charge"
+                id="dtdc-charge"
                 type="number"
                 min="0"
                 max="100000"
                 step="1"
                 required
                 className={styles.nameInput}
-                value={settings.deliveryCharge ?? 40}
-                onChange={(e) =>
-                  setSettings({ ...settings, deliveryCharge: e.target.value === "" ? "" : Number(e.target.value) })
-                }
+                value={settings.dtdcCharge ?? settings.deliveryCharge ?? 40}
+                onChange={(e) => {
+                  const val = e.target.value === "" ? "" : Number(e.target.value);
+                  setSettings({ ...settings, dtdcCharge: val, deliveryCharge: val });
+                }}
               />
               <p className={styles.hint} style={{ marginTop: -16, marginBottom: 16 }}>
-                Fee added when order total is below the free delivery minimum.
+                Standard shipping. Takes 5–8 days, plant condition is good.
               </p>
             </div>
 
             <div>
-              <label className={styles.label} htmlFor="free-delivery-threshold">
-                Free delivery minimum order (₹)
+              <label className={styles.label} htmlFor="bluedart-charge">
+                Blue Dart Express delivery charge (₹)
               </label>
               <input
-                id="free-delivery-threshold"
+                id="bluedart-charge"
                 type="number"
                 min="0"
-                max="10000000"
+                max="100000"
                 step="1"
                 required
                 className={styles.nameInput}
-                value={settings.freeDeliveryThreshold ?? 3999}
+                value={settings.bluedartCharge ?? 90}
                 onChange={(e) =>
-                  setSettings({ ...settings, freeDeliveryThreshold: e.target.value === "" ? "" : Number(e.target.value) })
+                  setSettings({ ...settings, bluedartCharge: e.target.value === "" ? "" : Number(e.target.value) })
                 }
               />
               <p className={styles.hint} style={{ marginTop: -16, marginBottom: 16 }}>
-                Minimum items total for free shipping. Set to 0 for free delivery on all orders.
+                Express air shipping. Takes 2–4 days, fast delivery and superior quality.
               </p>
             </div>
+          </div>
+
+          <div style={{ marginTop: 8 }}>
+            <label className={styles.label} htmlFor="free-delivery-threshold">
+              Free delivery minimum order (₹)
+            </label>
+            <input
+              id="free-delivery-threshold"
+              type="number"
+              min="0"
+              max="10000000"
+              step="1"
+              required
+              className={styles.nameInput}
+              value={settings.freeDeliveryThreshold ?? 3999}
+              onChange={(e) =>
+                setSettings({ ...settings, freeDeliveryThreshold: e.target.value === "" ? "" : Number(e.target.value) })
+              }
+            />
+            <p className={styles.hint} style={{ marginTop: -16, marginBottom: 16 }}>
+              Orders at or above this amount receive FREE DTDC standard shipping and discounted Blue Dart express delivery. Set to 0 for free delivery on all orders.
+            </p>
           </div>
 
           <div className={styles.visibility} style={{ marginTop: 8 }}>
             <div>
               <label style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <FiTruck aria-hidden="true" style={{ color: "#26784a" }} /> Active Rule Summary
+                <FiTruck aria-hidden="true" style={{ color: "#26784a" }} /> Active Courier Rules Preview
               </label>
-              <p style={{ marginTop: 4 }}>
-                {threshold === 0
-                  ? "All customer orders qualify for 100% FREE delivery regardless of amount."
-                  : `Orders under ₹${threshold.toLocaleString("en-IN")} pay ₹${charge.toLocaleString("en-IN")} delivery. Orders ₹${threshold.toLocaleString("en-IN")} and above qualify for FREE delivery.`}
-              </p>
+              <div style={{ marginTop: 8, fontSize: 13, lineHeight: 1.6, color: "#2a4334" }}>
+                <p style={{ margin: "0 0 6px" }}>
+                  <strong>📦 DTDC Standard:</strong> ₹{dtdcCharge.toLocaleString("en-IN")} {threshold > 0 ? `(FREE on orders ₹${threshold.toLocaleString("en-IN")}+)` : "(FREE on all orders)"} · Takes more time, condition is good.
+                </p>
+                <p style={{ margin: 0 }}>
+                  <strong>⚡ Blue Dart Express:</strong> ₹{bluedartCharge.toLocaleString("en-IN")} {threshold > 0 ? `(Upgrade for ₹${Math.max(0, bluedartCharge - dtdcCharge).toLocaleString("en-IN")} on orders ₹${threshold.toLocaleString("en-IN")}+)` : `(₹${Math.max(0, bluedartCharge - dtdcCharge).toLocaleString("en-IN")} on all orders)`} · Fast delivery & great plant quality.
+                </p>
+              </div>
             </div>
           </div>
 

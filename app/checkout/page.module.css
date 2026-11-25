@@ -121,3 +121,129 @@
   color: #dc2626;
   font-weight: 500;
 }
+
+/* Courier Options */
+.courierCard {
+  margin-bottom: 20px;
+  padding: 22px;
+  border: 1px solid #e3eae2;
+  border-radius: 14px;
+  background: #fff;
+}
+
+.courierCard h2 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 16px;
+  margin: 0 0 16px;
+}
+
+.courierCard h2 > span {
+  display: grid;
+  place-items: center;
+  width: 25px;
+  height: 25px;
+  border-radius: 8px;
+  background: #edf5ef;
+  color: #34724b;
+  font-size: 12px;
+}
+
+.courierList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.courierOption {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 2px solid #e2ebe4;
+  border-radius: 12px;
+  background: #ffffff;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.courierOption:hover {
+  border-color: #bad3c3;
+  background: #f7faf8;
+}
+
+.courierOptionActive {
+  border-color: #26784a;
+  background: #f0f8f3;
+  box-shadow: 0 3px 10px rgba(38, 120, 74, 0.08);
+}
+
+.courierOption input[type="radio"] {
+  margin-top: 3px;
+  accent-color: #26784a;
+  cursor: pointer;
+}
+
+.courierDetails {
+  flex: 1;
+}
+
+.courierTopRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.courierName {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1a3a27;
+}
+
+.courierBadge {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: #e2ede5;
+  color: #205c38;
+}
+
+.courierBadgeExpress {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.courierPrice {
+  font-size: 14px;
+  font-weight: 700;
+  color: #26784a;
+  white-space: nowrap;
+}
+
+.courierPriceFree {
+  color: #16a34a;
+}
+
+.courierDesc {
+  margin: 0;
+  font-size: 11.5px;
+  color: #68796f;
+  line-height: 1.45;
+}
+
+.statePriceBadge {
+  display: inline-block;
+  margin-top: 2px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: #eaf5ee;
+  color: #1f683b;
+  font-size: 10px;
+  font-weight: 600;
+}

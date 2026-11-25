@@ -11,7 +11,8 @@ import { useCart } from "../../context/CartContext";
 import { useCustomer } from "../../context/CustomerContext";
 import ProductCard from "../../components/ProductCard";
 import PaymentMethods from "../../components/PaymentMethods";
-import { isProductDeliverableToLocation } from "../../../lib/indian-regions.mjs";
+import { isProductDeliverableToLocation, getStateFromPincode } from "../../../lib/indian-regions.mjs";
+import { getProductPriceInfo } from "../../../lib/product-pricing.mjs";
 import { getCategoryPath } from "../../../lib/category-tree.mjs";
 import styles from "./page.module.css";
 
@@ -62,7 +63,11 @@ export default function ProductPage() {
 
   const category = categories.find(item => item.id === product.categoryId);
   const categoryPath = getCategoryPath(product.categoryId, categories);
-  const discount = Number(product.oldPrice) > Number(product.price) ? Math.round((Number(product.oldPrice) - Number(product.price)) / Number(product.oldPrice) * 100) : 0;
+  const activeState = customer?.state || (/^[1-9][0-9]{5}$/.test(pincode) ? getStateFromPincode(pincode) : null);
+  const priceInfo = getProductPriceInfo(product, { state: activeState });
+  const effectivePrice = priceInfo.price;
+  const effectiveOldPrice = priceInfo.oldPrice || product.oldPrice;
+  const discount = Number(effectiveOldPrice) > Number(effectivePrice) ? Math.round((Number(effectiveOldPrice) - Number(effectivePrice)) / Number(effectiveOldPrice) * 100) : 0;
   const variants = Object.entries(product.adeniumOptions || {}).filter(([, price]) => price !== '' && price != null);
   const related = products.filter(item => item.categoryId === product.categoryId && item.id !== product.id).slice(0, 4);
   const rating = product.demoMetrics ? 4.4 : Number(product.rating);
@@ -121,10 +126,12 @@ export default function ProductPage() {
     event.preventDefault();
     if (!product.inStock) { setDeliveryMessage('This product is currently sold out.'); return; }
     const check = isProductDeliverableToLocation(product, pincode);
+    const pinState = getStateFromPincode(pincode);
     if (!check.deliverable) {
       setDeliveryMessage(check.message || `Delivery to pincode ${pincode} is not available for this product.`);
     } else {
-      setDeliveryMessage(`✓ Delivery is available to pincode ${pincode}!${product.deliveryNote ? ` ${product.deliveryNote}` : ''}`);
+      const statePriceNote = (pinState && product.statePricing) ? ` · Special rate for ${pinState} applied!` : '';
+      setDeliveryMessage(`✓ Delivery is available to pincode ${pincode}!${statePriceNote}${product.deliveryNote ? ` ${product.deliveryNote}` : ''}`);
     }
   };
 
@@ -216,7 +223,15 @@ export default function ProductPage() {
           <div className={styles.rating}>
             {reviewCount > 0 ? <><span className={styles.stars} aria-hidden="true">{[1, 2, 3, 4, 5].map(star => star <= Math.round(rating) ? <FaStar key={star} /> : <FaRegStar key={star} />)}</span><span><strong>{rating.toFixed(1)}</strong> | {reviewCount} reviews</span>{product.demoMetrics && <span className={styles.demo}>Demo</span>}</> : <span className={styles.noReviews}>No reviews yet</span>}
           </div>
-          <div className={styles.price}><strong>Rs. {money(product.price)}</strong>{discount > 0 && <><del>Rs. {money(product.oldPrice)}</del><span>{discount}% OFF</span></>}</div>
+          <div className={styles.price}>
+            <strong>Rs. {money(effectivePrice)}</strong>
+            {discount > 0 && <><del>Rs. {money(effectiveOldPrice)}</del><span>{discount}% OFF</span></>}
+            {priceInfo.isStatePrice && (
+              <span style={{ fontSize: '0.8rem', background: '#ecfdf5', color: '#047857', border: '1px solid #a7f3d0', padding: '2px 8px', borderRadius: '4px', fontWeight: 600 }}>
+                Rate for {priceInfo.matchedState}
+              </span>
+            )}
+          </div>
           {product.demoMetrics && <p className={styles.viewers}><span className={styles.dot} /><span><strong>14</strong> people are viewing this right now</span><span className={styles.demo}>Demo</span></p>}
           {product.shippingScope === 'states' && product.deliveryStates && (
             <div style={{ fontSize: '0.84rem', color: '#0369a1', background: '#f0f9ff', border: '1px solid #bae6fd', padding: '0.45rem 0.75rem', borderRadius: '6px', margin: '0.6rem 0', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>

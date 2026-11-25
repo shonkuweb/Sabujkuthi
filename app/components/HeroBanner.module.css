@@ -6,20 +6,32 @@
   box-sizing: border-box;
 }
 
-/* Mobile Banner Sizing */
+/* Mobile Banner Sizing (16:9 on all mobile screens) */
 .mobileContainer {
   width: 100%;
-  aspect-ratio: 4 / 3;
-  max-height: 460px;
-  min-height: 220px;
+  aspect-ratio: 16 / 9;
   margin: 0 0 4px;
 }
 
 @media (max-width: 480px) {
   .mobileContainer {
-    aspect-ratio: 1 / 1;
-    max-height: 420px;
-    min-height: 260px;
+    aspect-ratio: 16 / 9;
+    max-height: none;
+    min-height: unset;
+  }
+}
+
+/* Ensure any hero banner (mobile or fallback desktop) in mobile view (< 768px) is 16:9 */
+@media (max-width: 767px) {
+  .mobileContainer,
+  .desktopContainer {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    min-height: unset;
+    max-height: none;
+    margin: 0 0 4px;
+    border-radius: 0;
+    box-shadow: none;
   }
 }
 

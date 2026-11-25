@@ -44,6 +44,7 @@ model Product {
   categoryIds    String? // Stored as JSON string array e.g. '["id1","id2"]'
   productCategories ProductCategory[]
   oldPrice       String?
+  statePricing   String? // Stored as JSON string e.g. '{"West Bengal":{"price":"899","oldPrice":"1299"}}'
   inStock        Boolean @default(true)
   isPublished    Boolean @default(false)
   createdAt      DateTime @default(now())
@@ -104,6 +105,8 @@ model Order {
   total               Int
   currency            String   @default("INR")
   paymentMode         String
+  courier             String?  @default("dtdc")
+  courierCharge       Int?
   couponCode          String?
   affiliateId         String?
   affiliate           AffiliateAccount? @relation(fields: [affiliateId], references: [id], onDelete: SetNull)
