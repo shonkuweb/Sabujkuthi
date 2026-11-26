@@ -47,6 +47,10 @@ export default function CategoriesPanel() {
   const [isDragging, setIsDragging] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [collapsedIds, setCollapsedIds] = useState(new Set());
+  const [draggedCatId, setDraggedCatId] = useState(null);
+  const [dragOverCatId, setDragOverCatId] = useState(null);
+  const [dropPosition, setDropPosition] = useState(null);
+  const [reordering, setReordering] = useState(false);
   const nameRef = useRef(null);
   const addRef = useRef(null);
   const fileRef = useRef(null);
@@ -214,6 +218,87 @@ export default function CategoriesPanel() {
     ? categories.filter(c => c.name.toLowerCase().includes(searchQuery.trim().toLowerCase()))
     : flattened.filter(cat => !isHiddenByAncestor(cat.id));
 
+  const handleDragStart = (e, cat) => {
+    e.dataTransfer.setData("text/plain", cat.id);
+    e.dataTransfer.effectAllowed = "move";
+    setDraggedCatId(cat.id);
+  };
+
+  const handleDragOver = (e, cat) => {
+    e.preventDefault();
+    if (!draggedCatId || draggedCatId === cat.id) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const midY = rect.top + rect.height / 2;
+    const pos = e.clientY < midY ? "before" : "after";
+    setDragOverCatId(cat.id);
+    setDropPosition(pos);
+  };
+
+  const handleDrop = async (e, targetCat) => {
+    e.preventDefault();
+    if (!draggedCatId || draggedCatId === targetCat.id) {
+      setDraggedCatId(null);
+      setDragOverCatId(null);
+      setDropPosition(null);
+      return;
+    }
+
+    const currentList = [...categories];
+    const fromIdx = currentList.findIndex(c => c.id === draggedCatId);
+    if (fromIdx === -1) return;
+    const [draggedItem] = currentList.splice(fromIdx, 1);
+
+    const targetIdx = currentList.findIndex(c => c.id === targetCat.id);
+    if (targetIdx === -1) return;
+
+    const insertIdx = dropPosition === "before" ? targetIdx : targetIdx + 1;
+    currentList.splice(insertIdx, 0, draggedItem);
+
+    const updatedWithOrder = currentList.map((c, idx) => ({ ...c, order: idx }));
+    setCategories(updatedWithOrder);
+    setDraggedCatId(null);
+    setDragOverCatId(null);
+    setDropPosition(null);
+    await saveCategoryOrder(updatedWithOrder);
+  };
+
+  const moveCategoryStep = async (cat, direction) => {
+    const list = [...categories];
+    const idx = list.findIndex(c => c.id === cat.id);
+    if (idx === -1) return;
+    const targetIdx = idx + direction;
+    if (targetIdx < 0 || targetIdx >= list.length) return;
+    const [item] = list.splice(idx, 1);
+    list.splice(targetIdx, 0, item);
+    const updatedWithOrder = list.map((c, i) => ({ ...c, order: i }));
+    setCategories(updatedWithOrder);
+    await saveCategoryOrder(updatedWithOrder);
+  };
+
+  const saveCategoryOrder = async (list) => {
+    setReordering(true);
+    try {
+      const res = await fetch("/api/categories", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ items: list.map(c => ({ id: c.id, order: c.order })) }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to save category order.");
+      setNotice("Category arrangement saved.");
+      setTimeout(() => setNotice(""), 3000);
+      if (typeof BroadcastChannel !== "undefined") {
+        const channel = new BroadcastChannel("store-categories");
+        channel.postMessage("updated");
+        channel.close();
+      }
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setReordering(false);
+    }
+  };
+
   return (
     <div className={styles.workspace}>
       <div className={styles.toolbar}>
@@ -346,6 +431,9 @@ export default function CategoriesPanel() {
                 <span>·</span>
                 <button type="button" className={styles.textActionBtn} onClick={collapseAll}>Collapse All</button>
               </div>
+              {!searchQuery.trim() && (
+                <span className={styles.reorderHint}>✥ Drag cards or use ▲▼ to reorder</span>
+              )}
             </div>
             <div className={styles.searchWrap}>
               <FiSearch aria-hidden="true" />
@@ -370,10 +458,58 @@ export default function CategoriesPanel() {
               return (
                 <article
                   key={category.id}
-                  className={`${styles.treeCard} ${isSub ? styles.subCard : ""}`}
+                  draggable={!searchQuery.trim()}
+                  onDragStart={(e) => handleDragStart(e, category)}
+                  onDragOver={(e) => handleDragOver(e, category)}
+                  onDragLeave={(e) => {
+                    if (!e.currentTarget.contains(e.relatedTarget)) {
+                      setDragOverCatId(null);
+                      setDropPosition(null);
+                    }
+                  }}
+                  onDrop={(e) => handleDrop(e, category)}
+                  onDragEnd={() => {
+                    setDraggedCatId(null);
+                    setDragOverCatId(null);
+                    setDropPosition(null);
+                  }}
+                  className={`${styles.treeCard} ${isSub ? styles.subCard : ""} ${
+                    draggedCatId === category.id ? styles.cardDragging : ""
+                  } ${
+                    dragOverCatId === category.id && dropPosition === "before" ? styles.dropBefore : ""
+                  } ${
+                    dragOverCatId === category.id && dropPosition === "after" ? styles.dropAfter : ""
+                  }`}
                   style={{ marginLeft: `${Math.min(depth, 4) * 24}px` }}
                 >
                   <div className={styles.treeCardLeft}>
+                    {!searchQuery.trim() && (
+                      <div className={styles.dragHandle}>
+                        <span className={styles.dragGrip} title="Drag to reorder category">
+                          ⋮⋮
+                        </span>
+                        <div className={styles.stepBtns}>
+                          <button
+                            type="button"
+                            className={styles.stepBtn}
+                            onClick={(e) => { e.stopPropagation(); moveCategoryStep(category, -1); }}
+                            disabled={categories.findIndex(c => c.id === category.id) === 0 || reordering}
+                            title="Move up"
+                          >
+                            ▲
+                          </button>
+                          <button
+                            type="button"
+                            className={styles.stepBtn}
+                            onClick={(e) => { e.stopPropagation(); moveCategoryStep(category, 1); }}
+                            disabled={categories.findIndex(c => c.id === category.id) === categories.length - 1 || reordering}
+                            title="Move down"
+                          >
+                            ▼
+                          </button>
+                        </div>
+                      </div>
+                    )}
                     {isSub && <FiCornerDownRight className={styles.branchIcon} aria-hidden="true" />}
                     <div className={styles.cardImage}>
                       {category.image ? <img src={category.image} alt={category.name} /> : <FiImage aria-hidden="true" />}

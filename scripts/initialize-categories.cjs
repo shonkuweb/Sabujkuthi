@@ -30,11 +30,24 @@ try {
         isVisibleInShopBy: 'BOOLEAN NOT NULL DEFAULT true',
         parentId: 'TEXT REFERENCES Category(id) ON DELETE SET NULL',
         order: 'INTEGER NOT NULL DEFAULT 0',
+        createdAt: 'DATETIME',
       };
       for (const [column, definition] of Object.entries(categoryAdditions)) {
         if (!categoryColumns.some(existing => existing.name === column)) db.exec(`ALTER TABLE Category ADD COLUMN "${column}" ${definition}`);
       }
+      db.exec(`UPDATE Category SET createdAt = datetime('now') WHERE createdAt IS NULL;`);
       db.exec('CREATE INDEX IF NOT EXISTS "Category_parentId_idx" ON "Category"("parentId")');
+      const nonZeroCat = db.prepare('SELECT COUNT(*) as count FROM Category WHERE "order" > 0').get();
+      if (!nonZeroCat || nonZeroCat.count === 0) {
+        db.exec(`
+          WITH OrderedCategories AS (
+            SELECT id, ROW_NUMBER() OVER (ORDER BY rowid ASC) - 1 AS newOrder
+            FROM Category
+          )
+          UPDATE Category
+          SET "order" = (SELECT newOrder FROM OrderedCategories WHERE OrderedCategories.id = Category.id);
+        `);
+      }
     }
     const productColumns = db.prepare('PRAGMA table_info(Product)').all();
     if (productColumns.length) {
@@ -57,12 +70,24 @@ try {
         statePricing: 'TEXT',
         inStock: 'BOOLEAN NOT NULL DEFAULT true',
         isPublished: 'BOOLEAN NOT NULL DEFAULT false',
+        order: 'INTEGER NOT NULL DEFAULT 0',
         image2: 'TEXT',
       };
       for (const [column, definition] of Object.entries(additions)) {
         if (!productColumns.some(existing => existing.name === column)) db.exec(`ALTER TABLE Product ADD COLUMN "${column}" ${definition}`);
       }
       db.exec('CREATE INDEX IF NOT EXISTS "Product_categoryId_idx" ON "Product"("categoryId")');
+      const nonZeroProd = db.prepare('SELECT COUNT(*) as count FROM Product WHERE "order" > 0').get();
+      if (!nonZeroProd || nonZeroProd.count === 0) {
+        db.exec(`
+          WITH OrderedProducts AS (
+            SELECT id, ROW_NUMBER() OVER (ORDER BY createdAt ASC) - 1 AS newOrder
+            FROM Product
+          )
+          UPDATE Product
+          SET "order" = (SELECT newOrder FROM OrderedProducts WHERE OrderedProducts.id = Product.id);
+        `);
+      }
       db.exec(`CREATE TABLE IF NOT EXISTS "ProductCategory" (
         "productId" TEXT NOT NULL,
         "categoryId" TEXT NOT NULL,

@@ -67,6 +67,10 @@ export default function InventoryPanel() {
   const [newStateName, setNewStateName] = useState("");
   const [newStatePrice, setNewStatePrice] = useState("");
   const [newStateOldPrice, setNewStateOldPrice] = useState("");
+  const [draggedProdId, setDraggedProdId] = useState(null);
+  const [dragOverProdId, setDragOverProdId] = useState(null);
+  const [prodDropPos, setProdDropPos] = useState(null); // 'before' | 'after'
+  const [reordering, setReordering] = useState(false);
 
   const fileRef = useRef(null);
   const fileRef2 = useRef(null);
@@ -234,7 +238,7 @@ export default function InventoryPanel() {
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Unable to save product.");
-      setProducts(current => form.id ? current.map(p => p.id === form.id ? data.product : p) : [data.product, ...current]);
+      setProducts(current => form.id ? current.map(p => p.id === form.id ? data.product : p) : [...current, data.product]);
       setNotice(form.id ? "Product updated." : "Product added.");
       close();
     } catch (err) {
@@ -322,6 +326,94 @@ export default function InventoryPanel() {
   const totalCount = products.length;
   const inStockCount = products.filter(p => p.inStock).length;
   const soldOutCount = products.filter(p => !p.inStock).length;
+
+  const isFilterActive = Boolean(searchQuery.trim() || selectedCatFilter || stockFilter !== "all");
+
+  const handleDragStartProduct = (e, prod) => {
+    if (isFilterActive) return;
+    e.dataTransfer.setData("text/plain", prod.id);
+    e.dataTransfer.effectAllowed = "move";
+    setDraggedProdId(prod.id);
+  };
+
+  const handleDragOverProduct = (e, prod) => {
+    e.preventDefault();
+    if (!draggedProdId || draggedProdId === prod.id || isFilterActive) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    if (viewMode === "grid") {
+      const midX = rect.left + rect.width / 2;
+      setProdDropPos(e.clientX < midX ? "before" : "after");
+    } else {
+      const midY = rect.top + rect.height / 2;
+      setProdDropPos(e.clientY < midY ? "before" : "after");
+    }
+    setDragOverProdId(prod.id);
+  };
+
+  const handleDropProduct = async (e, targetProd) => {
+    e.preventDefault();
+    if (!draggedProdId || draggedProdId === targetProd.id || isFilterActive) {
+      setDraggedProdId(null);
+      setDragOverProdId(null);
+      setProdDropPos(null);
+      return;
+    }
+
+    const currentList = [...products];
+    const fromIdx = currentList.findIndex(p => p.id === draggedProdId);
+    if (fromIdx === -1) return;
+    const [draggedItem] = currentList.splice(fromIdx, 1);
+
+    const targetIdx = currentList.findIndex(p => p.id === targetProd.id);
+    if (targetIdx === -1) return;
+
+    const insertIdx = prodDropPos === "before" ? targetIdx : targetIdx + 1;
+    currentList.splice(insertIdx, 0, draggedItem);
+
+    const updatedWithOrder = currentList.map((p, idx) => ({ ...p, order: idx }));
+    setProducts(updatedWithOrder);
+    setDraggedProdId(null);
+    setDragOverProdId(null);
+    setProdDropPos(null);
+    await saveProductOrder(updatedWithOrder);
+  };
+
+  const moveProductStep = async (prod, direction) => {
+    const list = [...products];
+    const idx = list.findIndex(p => p.id === prod.id);
+    if (idx === -1) return;
+    const targetIdx = idx + direction;
+    if (targetIdx < 0 || targetIdx >= list.length) return;
+    const [item] = list.splice(idx, 1);
+    list.splice(targetIdx, 0, item);
+    const updatedWithOrder = list.map((p, i) => ({ ...p, order: i }));
+    setProducts(updatedWithOrder);
+    await saveProductOrder(updatedWithOrder);
+  };
+
+  const saveProductOrder = async (list) => {
+    setReordering(true);
+    try {
+      const res = await fetch("/api/products", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ items: list.map(p => ({ id: p.id, order: p.order })) }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to save product order.");
+      setNotice("Product positions saved.");
+      setTimeout(() => setNotice(""), 3000);
+      if (typeof BroadcastChannel !== "undefined") {
+        const channel = new BroadcastChannel("store-products");
+        channel.postMessage("updated");
+        channel.close();
+      }
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setReordering(false);
+    }
+  };
 
   return (
     <div className={styles.workspace}>
@@ -813,25 +905,32 @@ export default function InventoryPanel() {
             </div>
 
             {/* View Mode Toggle: Grid vs List */}
-            <div className={invStyles.viewToggleGroup} role="group" aria-label="View layout switcher">
-              <button
-                type="button"
-                className={`${invStyles.viewToggleBtn} ${viewMode === "grid" ? invStyles.viewToggleBtnActive : ""}`}
-                onClick={() => setViewMode("grid")}
-                title="Grid view"
-                aria-label="Grid view"
-              >
-                <FiGrid />
-              </button>
-              <button
-                type="button"
-                className={`${invStyles.viewToggleBtn} ${viewMode === "list" ? invStyles.viewToggleBtnActive : ""}`}
-                onClick={() => setViewMode("list")}
-                title="List view"
-                aria-label="List view"
-              >
-                <FiList />
-              </button>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              {!isFilterActive && (
+                <span className={invStyles.reorderNoticePill}>
+                  ✥ Drag products or use ▲▼ to reorder
+                </span>
+              )}
+              <div className={invStyles.viewToggleGroup} role="group" aria-label="View layout switcher">
+                <button
+                  type="button"
+                  className={`${invStyles.viewToggleBtn} ${viewMode === "grid" ? invStyles.viewToggleBtnActive : ""}`}
+                  onClick={() => setViewMode("grid")}
+                  title="Grid view"
+                  aria-label="Grid view"
+                >
+                  <FiGrid />
+                </button>
+                <button
+                  type="button"
+                  className={`${invStyles.viewToggleBtn} ${viewMode === "list" ? invStyles.viewToggleBtnActive : ""}`}
+                  onClick={() => setViewMode("list")}
+                  title="List view"
+                  aria-label="List view"
+                >
+                  <FiList />
+                </button>
+              </div>
             </div>
           </div>
 
@@ -875,9 +974,59 @@ export default function InventoryPanel() {
                 const discountPercent = getDiscountPercent(product.price, product.oldPrice);
 
                 return (
-                  <article className={invStyles.productCard} key={product.id} role="listitem">
+                  <article
+                    key={product.id}
+                    role="listitem"
+                    draggable={!isFilterActive}
+                    onDragStart={(e) => handleDragStartProduct(e, product)}
+                    onDragOver={(e) => handleDragOverProduct(e, product)}
+                    onDragLeave={(e) => {
+                      if (!e.currentTarget.contains(e.relatedTarget)) {
+                        setDragOverProdId(null);
+                        setProdDropPos(null);
+                      }
+                    }}
+                    onDrop={(e) => handleDropProduct(e, product)}
+                    onDragEnd={() => {
+                      setDraggedProdId(null);
+                      setDragOverProdId(null);
+                      setProdDropPos(null);
+                    }}
+                    className={`${invStyles.productCard} ${
+                      draggedProdId === product.id ? invStyles.cardDragging : ""
+                    } ${
+                      dragOverProdId === product.id && prodDropPos === "before" ? invStyles.cardDropBefore : ""
+                    } ${
+                      dragOverProdId === product.id && prodDropPos === "after" ? invStyles.cardDropAfter : ""
+                    }`}
+                  >
                     {/* Card Photo Container */}
                     <div className={invStyles.cardImageWrap}>
+                      {!isFilterActive && (
+                        <div className={invStyles.dragHandleGrid}>
+                          <span className={invStyles.dragGripIcon} title="Drag to rearrange plant">⋮⋮</span>
+                          <div className={invStyles.stepBtns}>
+                            <button
+                              type="button"
+                              className={invStyles.stepBtn}
+                              onClick={(e) => { e.stopPropagation(); moveProductStep(product, -1); }}
+                              disabled={products.findIndex(p => p.id === product.id) === 0 || reordering}
+                              title="Move earlier"
+                            >
+                              ▲
+                            </button>
+                            <button
+                              type="button"
+                              className={invStyles.stepBtn}
+                              onClick={(e) => { e.stopPropagation(); moveProductStep(product, 1); }}
+                              disabled={products.findIndex(p => p.id === product.id) === products.length - 1 || reordering}
+                              title="Move later"
+                            >
+                              ▼
+                            </button>
+                          </div>
+                        </div>
+                      )}
                       {product.image ? (
                         <img src={product.image} alt={product.title} className={invStyles.cardImg} loading="lazy" />
                       ) : (
@@ -987,6 +1136,7 @@ export default function InventoryPanel() {
               <table className={invStyles.listTable}>
                 <thead>
                   <tr>
+                    {!isFilterActive && <th style={{ width: 44, textAlign: "center" }}>Order</th>}
                     <th>Plant</th>
                     <th>Categories</th>
                     <th>Price</th>
@@ -1007,7 +1157,58 @@ export default function InventoryPanel() {
                         : "🇮🇳 All India";
 
                     return (
-                      <tr key={product.id}>
+                      <tr
+                        key={product.id}
+                        draggable={!isFilterActive}
+                        onDragStart={(e) => handleDragStartProduct(e, product)}
+                        onDragOver={(e) => handleDragOverProduct(e, product)}
+                        onDragLeave={(e) => {
+                          if (!e.currentTarget.contains(e.relatedTarget)) {
+                            setDragOverProdId(null);
+                            setProdDropPos(null);
+                          }
+                        }}
+                        onDrop={(e) => handleDropProduct(e, product)}
+                        onDragEnd={() => {
+                          setDraggedProdId(null);
+                          setDragOverProdId(null);
+                          setProdDropPos(null);
+                        }}
+                        className={`${
+                          draggedProdId === product.id ? invStyles.rowDragging : ""
+                        } ${
+                          dragOverProdId === product.id && prodDropPos === "before" ? invStyles.rowDropBefore : ""
+                        } ${
+                          dragOverProdId === product.id && prodDropPos === "after" ? invStyles.rowDropAfter : ""
+                        }`}
+                      >
+                        {!isFilterActive && (
+                          <td className={invStyles.dragHandleCell}>
+                            <div className={invStyles.dragHandleList}>
+                              <span title="Drag to rearrange product">⋮⋮</span>
+                              <div className={invStyles.stepBtns}>
+                                <button
+                                  type="button"
+                                  className={invStyles.stepBtn}
+                                  onClick={(e) => { e.stopPropagation(); moveProductStep(product, -1); }}
+                                  disabled={products.findIndex(p => p.id === product.id) === 0 || reordering}
+                                  title="Move earlier"
+                                >
+                                  ▲
+                                </button>
+                                <button
+                                  type="button"
+                                  className={invStyles.stepBtn}
+                                  onClick={(e) => { e.stopPropagation(); moveProductStep(product, 1); }}
+                                  disabled={products.findIndex(p => p.id === product.id) === products.length - 1 || reordering}
+                                  title="Move later"
+                                >
+                                  ▼
+                                </button>
+                              </div>
+                            </div>
+                          </td>
+                        )}
                         <td>
                           <div className={invStyles.tableTitleCol}>
                             <div className={invStyles.tableThumb}>

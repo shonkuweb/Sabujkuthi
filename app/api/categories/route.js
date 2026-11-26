@@ -30,7 +30,7 @@ function validate(data) {
 export async function GET() {
   try {
     const categories = await prisma.category.findMany({
-      orderBy: [{ order: 'asc' }, { name: 'asc' }],
+      orderBy: [{ order: 'asc' }, { createdAt: 'asc' }],
     });
     return NextResponse.json(categories.map(({ nameKey, ...category }) => category));
   } catch {
@@ -109,7 +109,15 @@ async function saveCategory(request, isUpdate) {
     const isVisibleInGrid = data.isVisibleInGrid !== undefined ? Boolean(data.isVisibleInGrid) : (isUpdate && categories[index].isVisibleInGrid !== undefined ? categories[index].isVisibleInGrid : true);
     const isVisibleInShopBy = data.isVisibleInShopBy !== undefined ? Boolean(data.isVisibleInShopBy) : (isUpdate && categories[index].isVisibleInShopBy !== undefined ? categories[index].isVisibleInShopBy : true);
     const isVisible = data.isVisible !== undefined ? Boolean(data.isVisible) : (isVisibleInNav || isVisibleInGrid || isVisibleInShopBy);
-    const order = typeof data.order === 'number' && Number.isFinite(data.order) ? Math.floor(data.order) : (isUpdate && categories[index].order !== undefined ? categories[index].order : 0);
+    let order;
+    if (typeof data.order === 'number' && Number.isFinite(data.order)) {
+      order = Math.floor(data.order);
+    } else if (isUpdate) {
+      order = categories[index].order !== undefined ? categories[index].order : 0;
+    } else {
+      const maxCat = await prisma.category.aggregate({ _max: { order: true } });
+      order = (maxCat._max.order ?? -1) + 1;
+    }
 
     const category = {
       ...(isUpdate ? categories[index] : {}),
@@ -135,6 +143,31 @@ async function saveCategory(request, isUpdate) {
 
 export async function POST(request) { return saveCategory(request, false); }
 export async function PUT(request) { return saveCategory(request, true); }
+
+export async function PATCH(request) {
+  if (await unauthorized(request)) return NextResponse.json({ error: 'Please log in to manage categories.' }, { status: 401 });
+  let body;
+  try { body = await request.json(); } catch {
+    return NextResponse.json({ error: 'Invalid reorder data.' }, { status: 400 });
+  }
+  const items = Array.isArray(body) ? body : Array.isArray(body?.items) ? body.items : null;
+  if (!items || !items.length) {
+    return NextResponse.json({ error: 'Array of items with id and order is required.' }, { status: 400 });
+  }
+  try {
+    await prisma.$transaction(
+      items.map(item =>
+        prisma.category.update({
+          where: { id: String(item.id) },
+          data: { order: Math.round(Number(item.order)) },
+        })
+      )
+    );
+    return NextResponse.json({ success: true, count: items.length });
+  } catch {
+    return NextResponse.json({ error: 'Unable to update category order.' }, { status: 500 });
+  }
+}
 
 export async function DELETE(request) {
   if (await unauthorized(request)) return NextResponse.json({ error: 'Please log in to manage categories.' }, { status: 401 });

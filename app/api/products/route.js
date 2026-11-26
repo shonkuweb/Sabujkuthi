@@ -28,7 +28,7 @@ export async function GET(request) {
   try {
     const products = await prisma.product.findMany({
       where: admin ? {} : { isPublished: true, category: { is: { isVisible: true } } },
-      orderBy: { createdAt: 'desc' },
+      orderBy: [{ order: 'asc' }, { createdAt: 'asc' }],
     });
     return NextResponse.json(products.map(publicProduct));
   } catch {
@@ -124,8 +124,19 @@ async function save(request, update) {
       }
     }
 
+    let order;
+    if (typeof data.order === 'number' && Number.isFinite(data.order)) {
+      order = Math.floor(data.order);
+    } else if (update && existing) {
+      order = existing.order ?? 0;
+    } else {
+      const maxProd = await prisma.product.aggregate({ _max: { order: true } });
+      order = (maxProd._max.order ?? -1) + 1;
+    }
+
     const fields = {
       title,
+      order,
       categoryId: primaryCategoryId,
       categoryIds: JSON.stringify(categoryIds),
       shippingScope,
@@ -157,6 +168,31 @@ async function save(request, update) {
 
 export async function POST(request) { return save(request, false); }
 export async function PUT(request) { return save(request, true); }
+
+export async function PATCH(request) {
+  if (!await authorized(request)) return NextResponse.json({ error: 'Please log in to manage products.' }, { status: 401 });
+  let body;
+  try { body = await request.json(); } catch {
+    return NextResponse.json({ error: 'Invalid reorder data.' }, { status: 400 });
+  }
+  const items = Array.isArray(body) ? body : Array.isArray(body?.items) ? body.items : null;
+  if (!items || !items.length) {
+    return NextResponse.json({ error: 'Array of items with id and order is required.' }, { status: 400 });
+  }
+  try {
+    await prisma.$transaction(
+      items.map(item =>
+        prisma.product.update({
+          where: { id: String(item.id) },
+          data: { order: Math.round(Number(item.order)) },
+        })
+      )
+    );
+    return NextResponse.json({ success: true, count: items.length });
+  } catch {
+    return NextResponse.json({ error: 'Unable to update product order.' }, { status: 500 });
+  }
+}
 export async function DELETE(request) {
   if (!await authorized(request)) return NextResponse.json({ error: 'Please log in to manage products.' }, { status: 401 });
   const url = new URL(request.url);

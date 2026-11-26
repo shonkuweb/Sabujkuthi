@@ -295,7 +295,7 @@ export default function NavbarSettingsEditor({ onSavingChange }) {
       // Update local products list
       let nextAll = [...allProducts];
       if (isNewProduct) {
-        nextAll.unshift(savedProduct);
+        nextAll.push(savedProduct);
       } else {
         nextAll = nextAll.map((p) => (p.id === savedProduct.id ? savedProduct : p));
       }
