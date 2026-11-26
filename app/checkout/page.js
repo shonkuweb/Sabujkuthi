@@ -8,7 +8,7 @@ import { FiCreditCard, FiLock, FiShield } from "react-icons/fi";
 import { useCart } from "../context/CartContext";
 import { useCustomer } from "../context/CustomerContext";
 import { useStoreSettings } from "../context/StoreSettingsContext";
-import { deliveryPaise, FREE_DELIVERY_THRESHOLD } from "../../lib/shipping.mjs";
+import { deliveryPaise, getEffectiveShippingConfig, FREE_DELIVERY_THRESHOLD } from "../../lib/shipping.mjs";
 import { checkoutPost, loadRazorpay } from "../../lib/razorpay-checkout";
 import { calculateDiscount } from "../../lib/discounts.mjs";
 import { getStateFromPincode } from "../../lib/indian-regions.mjs";
@@ -59,8 +59,9 @@ export default function CheckoutPage() {
   const subtotalRupees = Math.floor(subtotal / 100);
   const discountRupees = calculateDiscount(subtotalRupees, discountRule);
   const discountPaise = discountRupees * 100;
-  const dtdcShipping = deliveryPaise(subtotal, deliverySettings, 'dtdc');
-  const bluedartShipping = deliveryPaise(subtotal, deliverySettings, 'bluedart');
+  const effectiveShippingConfig = getEffectiveShippingConfig(effectiveItems, deliverySettings, { state: customerState });
+  const dtdcShipping = deliveryPaise(subtotal, effectiveShippingConfig, 'dtdc');
+  const bluedartShipping = deliveryPaise(subtotal, effectiveShippingConfig, 'bluedart');
   const shipping = courier === 'bluedart' ? bluedartShipping : dtdcShipping;
   const total = Math.max(100, subtotal - discountPaise + shipping);
 

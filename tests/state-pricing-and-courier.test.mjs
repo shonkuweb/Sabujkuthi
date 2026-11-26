@@ -159,3 +159,142 @@ test('prepareCheckout computes line items with state pricing and sets courier op
   // Request hashes must differ between DTDC and Blue Dart to prevent replay
   assert.notEqual(checkoutWb.requestHash, checkoutDtdc.requestHash);
 });
+
+test('products with custom DTDC and Blue Dart delivery prices configure shipping separately', () => {
+  const customProducts = [
+    {
+      id: 'prod-heavy-plant',
+      slug: 'heavy-plant',
+      title: 'Large Fiddle Leaf Fig',
+      price: '1200',
+      dtdcPrice: '65',
+      bluedartPrice: '140',
+      shippingScope: 'all_india',
+      inStock: true,
+      isPublished: true,
+      category: { isVisible: true },
+    },
+    {
+      id: 'prod-light-seed',
+      slug: 'seed-pack',
+      title: 'Zinnia Seed Packet',
+      price: '150',
+      dtdcPrice: '30',
+      bluedartPrice: '70',
+      shippingScope: 'all_india',
+      inStock: true,
+      isPublished: true,
+      category: { isVisible: true },
+    },
+    {
+      id: 'prod-default',
+      slug: 'normal-pot',
+      title: 'Ceramic Pot',
+      price: '300',
+      dtdcPrice: null, // Should use store defaults (40 / 90)
+      bluedartPrice: null,
+      shippingScope: 'all_india',
+      inStock: true,
+      isPublished: true,
+      category: { isVisible: true },
+    },
+  ];
+
+  const storeDelivery = {
+    freeDeliveryThreshold: 3999,
+    dtdcCharge: 40,
+    bluedartCharge: 90,
+  };
+
+  // 1. Single product checkout with custom rates
+  const orderHeavyDtdc = prepareCheckout(
+    {
+      customer: { name: 'Pooja Roy', phone: '9876543210', pincode: '700001', address: 'Park Street, Kolkata' },
+      items: [{ slug: 'heavy-plant', qty: 1 }],
+      courier: 'dtdc',
+    },
+    customProducts,
+    storeDelivery
+  );
+  assert.equal(orderHeavyDtdc.shipping, 6500); // Custom ₹65 DTDC
+  assert.equal(orderHeavyDtdc.total, 120000 + 6500);
+
+  const orderHeavyBlueDart = prepareCheckout(
+    {
+      customer: { name: 'Pooja Roy', phone: '9876543210', pincode: '700001', address: 'Park Street, Kolkata' },
+      items: [{ slug: 'heavy-plant', qty: 1 }],
+      courier: 'bluedart',
+    },
+    customProducts,
+    storeDelivery
+  );
+  assert.equal(orderHeavyBlueDart.shipping, 14000); // Custom ₹140 Blue Dart
+  assert.equal(orderHeavyBlueDart.total, 120000 + 14000);
+
+  // 2. Multi-product cart takes highest delivery tier
+  const orderMultiDtdc = prepareCheckout(
+    {
+      customer: { name: 'Pooja Roy', phone: '9876543210', pincode: '700001', address: 'Park Street, Kolkata' },
+      items: [
+        { slug: 'heavy-plant', qty: 1 },
+        { slug: 'seed-pack', qty: 1 },
+      ],
+      courier: 'dtdc',
+    },
+    customProducts,
+    storeDelivery
+  );
+  // Max(65, 30) = 65
+  assert.equal(orderMultiDtdc.shipping, 6500);
+
+  const orderMultiBlueDart = prepareCheckout(
+    {
+      customer: { name: 'Pooja Roy', phone: '9876543210', pincode: '700001', address: 'Park Street, Kolkata' },
+      items: [
+        { slug: 'heavy-plant', qty: 1 },
+        { slug: 'seed-pack', qty: 1 },
+      ],
+      courier: 'bluedart',
+    },
+    customProducts,
+    storeDelivery
+  );
+  // Max(140, 70) = 140
+  assert.equal(orderMultiBlueDart.shipping, 14000);
+
+  // 3. Fallback to store default when product rates are null
+  const orderDefault = prepareCheckout(
+    {
+      customer: { name: 'Pooja Roy', phone: '9876543210', pincode: '700001', address: 'Park Street, Kolkata' },
+      items: [{ slug: 'normal-pot', qty: 1 }],
+      courier: 'dtdc',
+    },
+    customProducts,
+    storeDelivery
+  );
+  assert.equal(orderDefault.shipping, 4000); // Store default ₹40
+
+  // 4. Free delivery threshold applies with custom product rates
+  const orderQualifyingFree = prepareCheckout(
+    {
+      customer: { name: 'Pooja Roy', phone: '9876543210', pincode: '700001', address: 'Park Street, Kolkata' },
+      items: [{ slug: 'heavy-plant', qty: 4 }], // 4 * 1200 = ₹4800 >= ₹3999
+      courier: 'dtdc',
+    },
+    customProducts,
+    storeDelivery
+  );
+  assert.equal(orderQualifyingFree.shipping, 0); // Free DTDC
+
+  const orderQualifyingBlueDartUpgrade = prepareCheckout(
+    {
+      customer: { name: 'Pooja Roy', phone: '9876543210', pincode: '700001', address: 'Park Street, Kolkata' },
+      items: [{ slug: 'heavy-plant', qty: 4 }], // 4 * 1200 = ₹4800 >= ₹3999
+      courier: 'bluedart',
+    },
+    customProducts,
+    storeDelivery
+  );
+  // Upgrade = Max(0, 140 - 65) = ₹75
+  assert.equal(orderQualifyingBlueDartUpgrade.shipping, 7500);
+});

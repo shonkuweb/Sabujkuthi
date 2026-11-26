@@ -44,6 +44,8 @@ async function save(request, update) {
   if (typeof data.title !== 'string' || !data.title.trim() || data.title.trim().length > 120) return NextResponse.json({ error: 'Enter a product name between 1 and 120 characters.' }, { status: 400 });
   if (!money(String(data.price ?? ''))) return NextResponse.json({ error: 'Enter a valid price with up to two decimal places.' }, { status: 400 });
   if (data.oldPrice != null && data.oldPrice !== '' && (!money(String(data.oldPrice)) || Number(data.oldPrice) <= Number(data.price))) return NextResponse.json({ error: 'Original price must be greater than the selling price.' }, { status: 400 });
+  if (data.dtdcPrice != null && data.dtdcPrice !== '' && !money(String(data.dtdcPrice))) return NextResponse.json({ error: 'Enter a valid DTDC delivery charge with up to two decimal places.' }, { status: 400 });
+  if (data.bluedartPrice != null && data.bluedartPrice !== '' && !money(String(data.bluedartPrice))) return NextResponse.json({ error: 'Enter a valid Blue Dart delivery charge with up to two decimal places.' }, { status: 400 });
   let categoryIds = Array.isArray(data.categoryIds)
     ? data.categoryIds.map(String).filter(Boolean)
     : data.categoryId ? [String(data.categoryId).trim()].filter(Boolean) : [];
@@ -110,9 +112,17 @@ async function save(request, update) {
             if (val.oldPrice != null && val.oldPrice !== '' && (!money(String(val.oldPrice)) || Number(val.oldPrice) <= Number(val.price))) {
               return NextResponse.json({ error: `Original price for ${stateName} must be greater than selling price.` }, { status: 400 });
             }
+            if (val.dtdcPrice != null && val.dtdcPrice !== '' && !money(String(val.dtdcPrice))) {
+              return NextResponse.json({ error: `Enter a valid DTDC delivery charge for ${stateName}.` }, { status: 400 });
+            }
+            if (val.bluedartPrice != null && val.bluedartPrice !== '' && !money(String(val.bluedartPrice))) {
+              return NextResponse.json({ error: `Enter a valid Blue Dart delivery charge for ${stateName}.` }, { status: 400 });
+            }
             sanitized[stateName] = {
               price: String(Number(val.price)),
               ...(val.oldPrice ? { oldPrice: String(Number(val.oldPrice)) } : {}),
+              ...(val.dtdcPrice != null && val.dtdcPrice !== '' ? { dtdcPrice: String(Number(val.dtdcPrice)) } : {}),
+              ...(val.bluedartPrice != null && val.bluedartPrice !== '' ? { bluedartPrice: String(Number(val.bluedartPrice)) } : {}),
             };
           } else if (money(String(val ?? ''))) {
             sanitized[stateName] = { price: String(Number(val)) };
@@ -145,6 +155,8 @@ async function save(request, update) {
       price: String(Number(data.price)),
       oldPrice: data.oldPrice ? String(Number(data.oldPrice)) : null,
       statePricing: statePricingJson,
+      dtdcPrice: data.dtdcPrice !== undefined ? (data.dtdcPrice != null && data.dtdcPrice !== '' ? String(Number(data.dtdcPrice)) : null) : (existing?.dtdcPrice ?? null),
+      bluedartPrice: data.bluedartPrice !== undefined ? (data.bluedartPrice != null && data.bluedartPrice !== '' ? String(Number(data.bluedartPrice)) : null) : (existing?.bluedartPrice ?? null),
       description: data.description?.trim() || null, image: imageUrl, image2: imageUrl2,
       inStock: data.inStock !== false, isPublished: data.isPublished !== false,
     };

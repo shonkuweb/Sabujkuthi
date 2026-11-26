@@ -754,6 +754,29 @@
   }
 }
 
+/* Courier Delivery Pricing */
+.courierPricingSection {
+  margin: 18px 0 24px;
+  padding: 16px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+}
+
+.courierPricingHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.courierPricingHeader h4 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #0f172a;
+}
+
 /* Statewise Pricing */
 .statePricingSection {
   margin: 18px 0 24px;
@@ -779,7 +802,7 @@
 
 .statePricingAddRow {
   display: grid;
-  grid-template-columns: 1.5fr 1fr 1fr auto;
+  grid-template-columns: 1.4fr 1fr 1fr 1fr 1fr auto;
   gap: 10px;
   align-items: flex-end;
   margin-bottom: 14px;

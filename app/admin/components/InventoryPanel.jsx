@@ -29,6 +29,8 @@ const blank = {
   shippingScope: "all_india",
   deliveryStates: "",
   deliveryPincodes: "",
+  dtdcPrice: "",
+  bluedartPrice: "",
   price: "",
   oldPrice: "",
   statePricing: {},
@@ -67,6 +69,8 @@ export default function InventoryPanel() {
   const [newStateName, setNewStateName] = useState("");
   const [newStatePrice, setNewStatePrice] = useState("");
   const [newStateOldPrice, setNewStateOldPrice] = useState("");
+  const [newStateDtdcPrice, setNewStateDtdcPrice] = useState("");
+  const [newStateBluedartPrice, setNewStateBluedartPrice] = useState("");
   const [draggedProdId, setDraggedProdId] = useState(null);
   const [dragOverProdId, setDragOverProdId] = useState(null);
   const [prodDropPos, setProdDropPos] = useState(null); // 'before' | 'after'
@@ -118,6 +122,8 @@ export default function InventoryPanel() {
       shippingScope: product.shippingScope || (product.deliveryPincodes ? "pincodes" : "all_india"),
       deliveryStates: product.deliveryStates || "",
       deliveryPincodes: product.deliveryPincodes || "",
+      dtdcPrice: product.dtdcPrice != null ? String(product.dtdcPrice) : "",
+      bluedartPrice: product.bluedartPrice != null ? String(product.bluedartPrice) : "",
       price: product.price || "",
       oldPrice: product.oldPrice || "",
       statePricing: statePricing || {},
@@ -129,6 +135,8 @@ export default function InventoryPanel() {
     setNewStateName("");
     setNewStatePrice("");
     setNewStateOldPrice("");
+    setNewStateDtdcPrice("");
+    setNewStateBluedartPrice("");
     setError(""); setNotice(""); setProcessing(false);
   };
 
@@ -140,6 +148,8 @@ export default function InventoryPanel() {
     setNewStateName("");
     setNewStatePrice("");
     setNewStateOldPrice("");
+    setNewStateDtdcPrice("");
+    setNewStateBluedartPrice("");
     setIsDraggingPrimary(false);
     setIsDraggingSecondary(false);
   };
@@ -154,6 +164,14 @@ export default function InventoryPanel() {
       setError("State original price must be greater than the state selling price.");
       return;
     }
+    if (newStateDtdcPrice && (isNaN(Number(newStateDtdcPrice)) || Number(newStateDtdcPrice) < 0)) {
+      setError("State DTDC delivery charge must be a valid positive amount.");
+      return;
+    }
+    if (newStateBluedartPrice && (isNaN(Number(newStateBluedartPrice)) || Number(newStateBluedartPrice) < 0)) {
+      setError("State Blue Dart delivery charge must be a valid positive amount.");
+      return;
+    }
     setError("");
     setForm(current => ({
       ...current,
@@ -162,12 +180,16 @@ export default function InventoryPanel() {
         [newStateName]: {
           price: String(Number(newStatePrice)),
           ...(newStateOldPrice ? { oldPrice: String(Number(newStateOldPrice)) } : {}),
+          ...(newStateDtdcPrice ? { dtdcPrice: String(Number(newStateDtdcPrice)) } : {}),
+          ...(newStateBluedartPrice ? { bluedartPrice: String(Number(newStateBluedartPrice)) } : {}),
         },
       },
     }));
     setNewStateName("");
     setNewStatePrice("");
     setNewStateOldPrice("");
+    setNewStateDtdcPrice("");
+    setNewStateBluedartPrice("");
   };
 
   const removeStatePricing = (stateToRemove) => {
@@ -230,6 +252,8 @@ export default function InventoryPanel() {
         ...form,
         categoryId: form.categoryId || form.categoryIds[0],
         categoryIds: form.categoryIds,
+        dtdcPrice: form.dtdcPrice != null && String(form.dtdcPrice).trim() !== "" ? String(form.dtdcPrice).trim() : null,
+        bluedartPrice: form.bluedartPrice != null && String(form.bluedartPrice).trim() !== "" ? String(form.bluedartPrice).trim() : null,
       };
       const response = await fetch("/api/products", {
         method: form.id ? "PUT" : "POST",
@@ -561,6 +585,30 @@ export default function InventoryPanel() {
                   />
                 </div>
                 <div>
+                  <label className={styles.label} style={{ fontSize: 11, marginBottom: 4 }}>DTDC (₹, opt.)</label>
+                  <input
+                    className={styles.nameInput}
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    placeholder="e.g. 50"
+                    value={newStateDtdcPrice}
+                    onChange={e => setNewStateDtdcPrice(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label className={styles.label} style={{ fontSize: 11, marginBottom: 4 }}>Blue Dart (₹, opt.)</label>
+                  <input
+                    className={styles.nameInput}
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    placeholder="e.g. 110"
+                    value={newStateBluedartPrice}
+                    onChange={e => setNewStateBluedartPrice(e.target.value)}
+                  />
+                </div>
+                <div>
                   <button
                     type="button"
                     className={styles.secondary}
@@ -580,6 +628,8 @@ export default function InventoryPanel() {
                       <th>State</th>
                       <th>Selling Price</th>
                       <th>Original Price</th>
+                      <th>DTDC</th>
+                      <th>Blue Dart</th>
                       <th style={{ width: 60, textAlign: "center" }}>Action</th>
                     </tr>
                   </thead>
@@ -587,11 +637,15 @@ export default function InventoryPanel() {
                     {Object.entries(form.statePricing).map(([st, info]) => {
                       const p = typeof info === "object" ? info.price : info;
                       const op = typeof info === "object" ? info.oldPrice : "";
+                      const dtdc = typeof info === "object" ? info.dtdcPrice : "";
+                      const bd = typeof info === "object" ? info.bluedartPrice : "";
                       return (
                         <tr key={st}>
                           <td><strong>{st}</strong></td>
                           <td style={{ color: "#1b5e3b", fontWeight: 600 }}>₹{p}</td>
                           <td style={{ color: "#78857d" }}>{op ? `₹${op}` : "—"}</td>
+                          <td style={{ color: "#0369a1" }}>{dtdc ? `₹${dtdc}` : "Default"}</td>
+                          <td style={{ color: "#1d4ed8" }}>{bd ? `₹${bd}` : "Default"}</td>
                           <td style={{ textAlign: "center" }}>
                             <button
                               type="button"
@@ -767,6 +821,56 @@ export default function InventoryPanel() {
                 <p className={styles.hint}>Separate multiple pincodes with commas. Customers outside these pincodes cannot place an order for this plant.</p>
               </div>
             )}
+
+            {/* Courier Delivery Charges */}
+            <div className={invStyles.courierPricingSection}>
+              <div className={invStyles.courierPricingHeader}>
+                <h4>Courier Delivery Charges (DTDC & Blue Dart)</h4>
+              </div>
+              <p className={styles.hint} style={{ marginTop: 0, marginBottom: 12 }}>
+                Configure custom delivery charges for this product. If left blank, the store-wide defaults (DTDC ₹40, Blue Dart ₹90) will be used at checkout.
+              </p>
+              <div className={styles.formColumns}>
+                <div>
+                  <label className={styles.label} htmlFor="product-dtdc-price">
+                    DTDC Delivery Charge (₹)
+                  </label>
+                  <input
+                    className={styles.nameInput}
+                    id="product-dtdc-price"
+                    type="number"
+                    min="0"
+                    max="100000"
+                    step="0.01"
+                    placeholder="Store default (₹40)"
+                    value={form.dtdcPrice ?? ""}
+                    onChange={event => change("dtdcPrice", event.target.value)}
+                  />
+                  <span className={styles.hint} style={{ fontSize: "0.8rem", color: "#64748b" }}>
+                    Economical standard delivery (condition is good).
+                  </span>
+                </div>
+                <div>
+                  <label className={styles.label} htmlFor="product-bluedart-price">
+                    Blue Dart Delivery Charge (₹)
+                  </label>
+                  <input
+                    className={styles.nameInput}
+                    id="product-bluedart-price"
+                    type="number"
+                    min="0"
+                    max="100000"
+                    step="0.01"
+                    placeholder="Store default (₹90)"
+                    value={form.bluedartPrice ?? ""}
+                    onChange={event => change("bluedartPrice", event.target.value)}
+                  />
+                  <span className={styles.hint} style={{ fontSize: "0.8rem", color: "#64748b" }}>
+                    Express priority delivery (fast & great plant quality).
+                  </span>
+                </div>
+              </div>
+            </div>
 
             <label className={styles.label} htmlFor="product-description">Description (optional)</label>
             <textarea className={styles.nameInput} id="product-description" rows={4} maxLength={10000} value={form.description || ""} onChange={event => change("description", event.target.value)} placeholder="Tell customers about this plant" />
@@ -1082,6 +1186,11 @@ export default function InventoryPanel() {
                             🏷️ {Object.keys(product.statePricing).length} States
                           </span>
                         )}
+                        {(product.dtdcPrice || product.bluedartPrice) && (
+                          <span className={invStyles.shippingPill} style={{ background: "#fef3c7", color: "#92400e", border: "1px solid #fde68a" }}>
+                            🚚 {product.dtdcPrice ? `DTDC ₹${product.dtdcPrice}` : "DTDC ₹40"} · {product.bluedartPrice ? `BD ₹${product.bluedartPrice}` : "BD ₹90"}
+                          </span>
+                        )}
                       </div>
                     </div>
 
@@ -1245,6 +1354,11 @@ export default function InventoryPanel() {
                             {product.statePricing && Object.keys(product.statePricing).length > 0 && (
                               <div style={{ fontSize: 10, color: "#257a46", marginTop: 2, fontWeight: 500 }}>
                                 🏷️ {Object.keys(product.statePricing).length} state prices
+                              </div>
+                            )}
+                            {(product.dtdcPrice || product.bluedartPrice) && (
+                              <div style={{ fontSize: 10, color: "#b45309", marginTop: 2, fontWeight: 500 }}>
+                                🚚 DTDC: ₹{product.dtdcPrice || "40"} | BD: ₹{product.bluedartPrice || "90"}
                               </div>
                             )}
                           </div>

@@ -45,6 +45,8 @@ model Product {
   productCategories ProductCategory[]
   oldPrice       String?
   statePricing   String? // Stored as JSON string e.g. '{"West Bengal":{"price":"899","oldPrice":"1299"}}'
+  dtdcPrice      String? // Custom DTDC delivery price (e.g. "50", "0", or null for store default)
+  bluedartPrice  String? // Custom Blue Dart delivery price (e.g. "120", "60", or null for store default)
   inStock        Boolean @default(true)
   isPublished    Boolean @default(false)
   order          Int     @default(0)

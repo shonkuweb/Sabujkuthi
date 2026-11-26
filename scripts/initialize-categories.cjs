@@ -68,6 +68,8 @@ try {
         categoryIds: 'TEXT',
         oldPrice: 'TEXT',
         statePricing: 'TEXT',
+        dtdcPrice: 'TEXT',
+        bluedartPrice: 'TEXT',
         inStock: 'BOOLEAN NOT NULL DEFAULT true',
         isPublished: 'BOOLEAN NOT NULL DEFAULT false',
         order: 'INTEGER NOT NULL DEFAULT 0',
