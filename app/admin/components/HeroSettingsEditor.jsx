@@ -25,6 +25,9 @@ export default function HeroSettingsEditor({ onSavingChange }) {
   const [isMobileDragging, setIsMobileDragging] = useState(false);
   const [isDesktopDragging, setIsDesktopDragging] = useState(false);
 
+  const [mobileUrlInput, setMobileUrlInput] = useState("");
+  const [desktopUrlInput, setDesktopUrlInput] = useState("");
+
   const mobileFileInputRef = useRef(null);
   const desktopFileInputRef = useRef(null);
 
@@ -52,6 +55,40 @@ export default function HeroSettingsEditor({ onSavingChange }) {
   useEffect(() => {
     onSavingChange(saving || uploading);
   }, [saving, uploading, onSavingChange]);
+
+  const autoSave = async (updatedSettings) => {
+    try {
+      const payload = {
+        ...updatedSettings,
+        mobileHeroImages: updatedSettings.mobileHeroImages || [],
+        desktopHeroImages: updatedSettings.desktopHeroImages || [],
+        heroImages: (updatedSettings.desktopHeroImages && updatedSettings.desktopHeroImages.length > 0)
+          ? updatedSettings.desktopHeroImages
+          : (updatedSettings.heroImages || []),
+      };
+      const response = await fetch("/api/store-settings/hero", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await response.json();
+      if (response.ok) {
+        setSettings({
+          ...data,
+          mobileHeroImages: data.mobileHeroImages || [],
+          desktopHeroImages: data.desktopHeroImages || data.heroImages || [],
+          heroImages: data.heroImages || data.desktopHeroImages || [],
+        });
+        if (typeof BroadcastChannel !== "undefined") {
+          const channel = new BroadcastChannel("store-settings");
+          channel.postMessage("hero-updated");
+          channel.close();
+        }
+      }
+    } catch (e) {
+      console.warn("Auto-save hero banner failed:", e);
+    }
+  };
 
   const processFiles = async (type, fileList) => {
     if (!fileList || !fileList.length || !settings) return;
@@ -113,29 +150,27 @@ export default function HeroSettingsEditor({ onSavingChange }) {
         }
 
         if (!res.ok || !data.url) {
-          throw new Error(data.error || `Failed to upload "${file.name}" to Cloudflare R2.`);
+          throw new Error(data.error || `Failed to upload "${file.name}".`);
         }
 
         uploadedUrls.push(data.url);
       }
 
-      setSettings((current) => {
-        const nextList = [...(current[key] || []), ...uploadedUrls].slice(0, 5);
-        const updated = {
-          ...current,
-          [key]: nextList,
-        };
-        // Keep fallback heroImages synced with desktop list
-        if (type === "desktop" || !updated.heroImages || updated.heroImages.length === 0) {
-          updated.heroImages = type === "desktop" ? nextList : updated.heroImages;
-        }
-        return updated;
-      });
+      const nextList = [...(currentList || []), ...uploadedUrls].slice(0, 5);
+      const updated = {
+        ...settings,
+        [key]: nextList,
+      };
+      if (type === "desktop" || !updated.heroImages || updated.heroImages.length === 0) {
+        updated.heroImages = type === "desktop" ? nextList : updated.heroImages;
+      }
+      setSettings(updated);
+      await autoSave(updated);
 
       setNotice(
         uploadedUrls.length === 1
-          ? `1 ${type} hero banner uploaded to Cloudflare R2 successfully.`
-          : `${uploadedUrls.length} ${type} hero banners uploaded to Cloudflare R2 successfully.`
+          ? `✓ 1 ${type} hero banner uploaded and saved successfully.`
+          : `✓ ${uploadedUrls.length} ${type} hero banners uploaded and saved successfully.`
       );
     } catch (err) {
       setError(err.message || "Failed to upload image(s).");
@@ -146,39 +181,63 @@ export default function HeroSettingsEditor({ onSavingChange }) {
   };
 
   const handleUploadImage = (type, event) => {
-    const files = event.target.files;
+    const files = Array.from(event.target.files || []);
     event.target.value = "";
-    if (files && files.length) {
+    if (files.length) {
       processFiles(type, files);
     }
   };
 
-  const moveImage = (type, index, direction) => {
+  const handleAddUrl = async (type) => {
+    const rawUrl = (type === "mobile" ? mobileUrlInput : desktopUrlInput).trim();
+    if (!rawUrl) return;
+    if (!/^(?:https?:\/\/|\/uploads\/|\/images\/)[^\s]+$/i.test(rawUrl)) {
+      setError("Please enter a valid image URL starting with http://, https://, or /uploads/.");
+      return;
+    }
     const key = type === "mobile" ? "mobileHeroImages" : "desktopHeroImages";
-    setSettings((current) => {
-      const list = [...(current[key] || [])];
-      const targetIndex = index + direction;
-      if (targetIndex < 0 || targetIndex >= list.length) return current;
-      [list[index], list[targetIndex]] = [list[targetIndex], list[index]];
-
-      const updated = { ...current, [key]: list };
-      if (type === "desktop") {
-        updated.heroImages = list;
-      }
-      return updated;
-    });
+    const currentList = settings[key] || [];
+    if (currentList.length >= 5) {
+      setError(`Maximum 5 ${type} hero banner images allowed. Remove an image to add a new one.`);
+      return;
+    }
+    setError("");
+    const nextList = [...currentList, rawUrl].slice(0, 5);
+    const updated = { ...settings, [key]: nextList };
+    if (type === "desktop" || !updated.heroImages || updated.heroImages.length === 0) {
+      updated.heroImages = type === "desktop" ? nextList : updated.heroImages;
+    }
+    setSettings(updated);
+    if (type === "mobile") setMobileUrlInput("");
+    else setDesktopUrlInput("");
+    await autoSave(updated);
+    setNotice(`✓ Added ${type} banner image successfully.`);
   };
 
-  const removeImage = (type, index) => {
+  const moveImage = async (type, index, direction) => {
     const key = type === "mobile" ? "mobileHeroImages" : "desktopHeroImages";
-    setSettings((current) => {
-      const list = (current[key] || []).filter((_, i) => i !== index);
-      const updated = { ...current, [key]: list };
-      if (type === "desktop") {
-        updated.heroImages = list;
-      }
-      return updated;
-    });
+    const list = [...(settings[key] || [])];
+    const targetIndex = index + direction;
+    if (targetIndex < 0 || targetIndex >= list.length) return;
+    [list[index], list[targetIndex]] = [list[targetIndex], list[index]];
+
+    const updated = { ...settings, [key]: list };
+    if (type === "desktop") {
+      updated.heroImages = list;
+    }
+    setSettings(updated);
+    await autoSave(updated);
+  };
+
+  const removeImage = async (type, index) => {
+    const key = type === "mobile" ? "mobileHeroImages" : "desktopHeroImages";
+    const list = (settings[key] || []).filter((_, i) => i !== index);
+    const updated = { ...settings, [key]: list };
+    if (type === "desktop") {
+      updated.heroImages = list;
+    }
+    setSettings(updated);
+    await autoSave(updated);
   };
 
   const save = async (event) => {
@@ -376,6 +435,28 @@ export default function HeroSettingsEditor({ onSavingChange }) {
                 </span>
               </div>
             </div>
+
+            <div style={{ display: "flex", gap: 8, marginTop: 12, alignItems: "center" }}>
+              <input
+                type="url"
+                className={styles.nameInput}
+                placeholder="Or paste mobile image URL (https://... or /uploads/...)"
+                value={mobileUrlInput}
+                onChange={(e) => setMobileUrlInput(e.target.value)}
+                style={{ flex: 1, height: 38, fontSize: 13 }}
+                disabled={uploading || saving || mobileImages.length >= 5}
+                onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleAddUrl("mobile"); } }}
+              />
+              <button
+                type="button"
+                className={styles.secondary}
+                style={{ height: 38, padding: "0 16px", whiteSpace: "nowrap" }}
+                onClick={() => handleAddUrl("mobile")}
+                disabled={uploading || saving || mobileImages.length >= 5 || !mobileUrlInput.trim()}
+              >
+                + Add URL
+              </button>
+            </div>
           </section>
 
           {/* SECTION 2: DESKTOP HERO BANNERS (COVERS FULL WIDTH IN DESKTOP VIEW) */}
@@ -504,6 +585,28 @@ export default function HeroSettingsEditor({ onSavingChange }) {
                     : "Select up to 5 widescreen JPG, PNG or WebP images spanning the full width of desktop screens."}
                 </span>
               </div>
+            </div>
+
+            <div style={{ display: "flex", gap: 8, marginTop: 12, alignItems: "center" }}>
+              <input
+                type="url"
+                className={styles.nameInput}
+                placeholder="Or paste desktop image URL (https://... or /uploads/...)"
+                value={desktopUrlInput}
+                onChange={(e) => setDesktopUrlInput(e.target.value)}
+                style={{ flex: 1, height: 38, fontSize: 13 }}
+                disabled={uploading || saving || desktopImages.length >= 5}
+                onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleAddUrl("desktop"); } }}
+              />
+              <button
+                type="button"
+                className={styles.secondary}
+                style={{ height: 38, padding: "0 16px", whiteSpace: "nowrap" }}
+                onClick={() => handleAddUrl("desktop")}
+                disabled={uploading || saving || desktopImages.length >= 5 || !desktopUrlInput.trim()}
+              >
+                + Add URL
+              </button>
             </div>
           </section>
 
